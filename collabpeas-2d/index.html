@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CollabPEAS 2D - Collaborative AI Agent Design (PEAS Framework)</title>
+  <link rel="stylesheet" href="styles/main.css" />
+  <link rel="stylesheet" href="styles/blocks.css" />
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand-section">
+        <span class="brand-logo">🤖</span>
+        <div>
+          <div class="brand-title">CollabPEAS 2D</div>
+          <div class="brand-sub">Collaborative AI Agent Specification • CSCW '26</div>
+        </div>
+      </div>
+
+      <!-- Step Navigation Tracker -->
+      <nav class="steps-nav-tracker">
+        <button class="step-nav-item active" data-step="1">1. Purpose (P)</button>
+        <button class="step-nav-item" data-step="2">2. World & Sensors (E+S)</button>
+        <button class="step-nav-item" data-step="3">3. Actuators (A)</button>
+        <button class="step-nav-item" data-step="4">4. Decision Logic</button>
+        <button class="step-nav-item" data-step="5">5. Test & Debug</button>
+      </nav>
+
+      <!-- Header Action Controls -->
+      <div class="header-actions">
+        <!-- Player Switcher (CSCW Dyadic Collaboration) -->
+        <div class="player-role-switcher">
+          <button class="player-btn active player-a" id="playerToggleA">Player A (Lead)</button>
+          <button class="player-btn player-b" id="playerToggleB">Player B (Reviewer)</button>
+        </div>
+
+        <!-- Mutual Contribution Awareness Display (CSCW 4.2) -->
+        <div class="contribution-mini-display" title="Mutual Contribution Equity">
+          <div class="contrib-label-row">
+            <span>Equity</span>
+            <span id="contribStatsText">A: 6 | B: 5</span>
+          </div>
+          <div class="contrib-progress-bar">
+            <div class="contrib-fill-a" id="contribRatioA" style="width: 55%;"></div>
+          </div>
+        </div>
+
+        <!-- Robot POV Quick Button -->
+        <button class="btn btn-sm btn-outline" id="quickPovBtn" title="View through robot sensors">
+          👁️ Robot POV
+        </button>
+
+        <!-- Audio Mute Toggle -->
+        <button class="btn btn-sm btn-ghost" id="muteToggleBtn" title="Toggle sound effects">
+          🔊 Audio On
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Split Layout -->
+    <main class="main-content">
+      <!-- Left Panel: 2D Interactive House Canvas -->
+      <section class="house-view-panel">
+        <div class="house-canvas-wrap">
+          <canvas id="houseCanvas"></canvas>
+          <!-- Robot POV Modal Overlay -->
+          <div id="robotPovModal"></div>
+        </div>
+      </section>
+
+      <!-- Right Panel: Step Panels & Workstations -->
+      <section class="step-content-panel">
+        <div id="stepsPanelMount"></div>
+        <div id="blockCanvasMount" style="display: none;"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Main JavaScript Module Entry -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

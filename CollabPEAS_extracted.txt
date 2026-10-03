@@ -1,0 +1,404 @@
+=== PAGE 1 ===
+CollabPEAS: A Collaborative VR System for Learning AI Agent
+Design Through the PEAS Framework
+Wanru (Jovie) Li
+CIT Interdisciplinary, Carnegie
+Mellon University
+Pittsburgh, Pennsylvania, USA
+wanrul@alumni.cmu.edu
+Yichen (Andy) Yu
+Department of Computer Science,
+North Carolina State University
+Raleigh, North Carolina, USA
+yyu55@ncsu.edu
+Qiao (Georgie) Jin
+Department of Computer Science,
+North Carolina State University
+Raleigh, North Carolina, USA
+qjin4@ncsu.edu
+Figure 1: Overview of CollabPEAS. Two learners collaboratively specify a virtual cleaning robot in a shared VR environment,
+working through a five-step flow that operationalizes the PEAS framework. The first four steps define a performance measure,
+characterize the environment, select sensors, and choose actuators, making each specification choice a spatially grounded
+and jointly inspectable decision. In the final Build and Iterate step, learners assemble SENSE →CONDITION →ACTION →
+CONTROL decision rules and then test, debug, and revise the agent. Test results feed back to refine the earlier PEAS choices,
+framing agent design as an iterative, collaborative activity in which every decision connects to observable robot behavior.
+Abstract
+situate CollabPEAS within AI literacy and collaborative learning
+research and discuss directions for future evaluation.
+We present CollabPEAS, a collaborative system for artificial intelli-
+gence (AI) literacy in which pairs of learners come to understand
+how an AI agent’s behavior is produced by human specification.
+Working in shared virtual reality (VR), learners jointly specify a
+virtual cleaning robot using the PEAS framework (Performance
+measure, Environment, Actuators, Sensors), developing competen-
+cies for reasoning about how AI agents sense, decide, and act. The
+system integrates three coordinated design elements: (1) a five-
+CCS Concepts
+• Social and professional topics →Computing education; •
+Human-centered computing →Collaborative and social com-
+puting systems and tools; Virtual reality; Computer supported
+cooperative work; • Applied computing →Interactive learning
+environments; Collaborative learning.
+step PEAS-guided design flow, implemented in VR, that makes
+agent specification choices spatially grounded and observable, (2)
+a block-based coding interface that preserves the perceive, decide,
+act reasoning cycle, and (3) collaboration supports designed to
+structure negotiation and shared ownership between partners. We
+Keywords
+AI literacy; Collaborative learning; PEAS framework; Virtual real-
+ity; Block-based coding; Agent specification; Computer-supported
+cooperative work
+ACM Reference Format:
+Wanru (Jovie) Li, Yichen (Andy) Yu, and Qiao (Georgie) Jin. 2026. Collab-
+PEAS: A Collaborative VR System for Learning AI Agent Design Through
+the PEAS Framework. In Companion of the Computer-Supported Cooper-
+ative Work and Social Computing (CSCW Companion ’26), October 10–14,
+2026, Salt Lake City, UT, USA. ACM, New York, NY, USA, 4 pages. https:
+//doi.org/10.1145/3785651.3831526
+This work is licensed under a Creative Commons Attribution 4.0 International License.
+CSCW Companion ’26, Salt Lake City, UT, USA
+© 2026 Copyright held by the owner/author(s).
+ACM ISBN 979-8-4007-2378-0/2026/10
+https://doi.org/10.1145/3785651.3831526
+=== PAGE 2 ===
+CSCW Companion ’26, October 10–14, 2026, Salt Lake City, UT, USA 1 Introduction
+Artificial Intelligence (AI) agents perceive their environment through
+sensors and act through actuators in pursuit of goals. They are now
+embedded in everyday systems [16], from voice assistants and rec-
+ommendation systems to autonomous navigation [8]. Although
+people may interact with these systems regularly, the design de-
+cisions behind the agent often remain hidden. This gap is central
+to AI literacy education, where learning AI requires more than
+learning how to use AI tools. Learners also need to understand
+how agents sense, decide, act, and how their behavior is shaped by
+human-authored specifications [11]. However, for most learners,
+the process of specifying an AI agent remains opaque.
+The PEAS framework offers a way to make this hidden specifi-
+cation process more explicit. PEAS structures agent design around
+four interdependent components: Performance measure, Environ-
+ment, Actuators, and Sensors [16]. By asking learners to define what
+an agent should achieve, where it operates, how it can act, and what
+information it can sense, PEAS turns the behavior of the agent into
+a set of design choices that can be examined and discussed. In doing
+so, it provides a useful scaffold for translating professional agent
+design reasoning into learning-oriented activities.
+Using this scaffold in a learning activity also requires attention to
+how learners engage with AI concepts. Research on AI literacy edu-
+cation points to the value of collaborative learning, as peer explana-
+tion can help learners remain engaged with abstract concepts [11].
+This focus on collaboration aligns with agent specification, which
+often requires people to negotiate task definitions, weigh sensor and
+actuator trade-offs, and interpret emergent behavior [16]. These
+considerations motivate our system, which frames the specification
+of PEAS-based agents as a collaborative activity. Immersive Virtual
+Reality (VR) is well-suited for this activity, as it supports spatial
+co-presence, allows partners to jointly observe and discuss agent
+behavior [6], and grounds abstract PEAS components as visible,
+manipulable objects [7, 10], making sensing, acting, and environ-
+mental constraints directly observable in ways that are difficult to
+support through text-based or 2D interfaces [11].
+We present CollabPEAS, a collaborative VR system for AI literacy
+education in which learner dyads specify a virtual cleaning robot
+using the PEAS framework and block-based coding, coming to un-
+derstand how agent behavior is produced by human specification.
+The system integrates three design elements: a VR environment
+that makes PEAS components spatially grounded and observable, a
+block-based coding interface that preserves agent design reasoning
+while reducing the burden of programming syntax, and collabora-
+tion supports designed to scaffold productive dyadic specification
+work.
+2 Related Work
+2.1 AI Literacy and the PEAS Framework
+AI literacy refers to the competencies that enable people to criti-
+cally evaluate AI technologies, collaborate with AI, and use AI in
+daily life and work. These competencies are essential for informed
+participation in an AI-mediated world. Long and Magerko [11]
+provide a comprehensive framework that identifies seventeen com-
+petencies and fifteen design considerations; CollabPEAS specifically
+targets five of these: Recognizing AI (C1), Decision-Making (C8),
+Wanru (Jovie) Li, Yichen (Andy) Yu, and Qiao (Georgie) Jin
+Action and Reaction (C14), Sensors (C15), and Programmability
+(C17). Existing AI literacy interventions for non-technical learn-
+ers have used media-rich curricula, hands-on machine learning
+activities, and block-based environments such as Scratch [14] and
+related tools [18], helping learners understand what AI is and how
+it operates at a conceptual level.
+However, a remaining challenge is the lack of designs that let
+learners practice the structured specification skills used to design
+AI agents: existing approaches primarily teach about AI agents,
+with fewer opportunities to reason through what an agent should
+sense, how it should act, and how success should be evaluated.
+In response, we use PEAS as a guiding scaffold for learner-facing
+agent design. PEAS [16] decomposes agent design into four compo-
+nents: Performance measure, Environment, Actuators, and Sensors.
+Although PEAS is already used as a teaching scaffold in introduc-
+tory AI education, our contribution is to adapt it into an embodied
+collaborative experience that makes each component a target for
+AI-literacy competency development.
+2.2 Collaborative Learning in Immersive VR
+Collaborative learning can effectively support AI literacy compe-
+tencies. As Long and Magerko [11] note, collaborative activities
+can sustain engagement and promote conceptual understanding
+through peer explanation. Previous work has explored different
+collaboration strategies, such as role-based collaboration [17] and
+flexible adaptive collaboration modes [20], to support AI literacy
+and related computational competencies such as programming.
+In this work, we use immersive virtual reality (VR) to support
+collaborative learning of AI literacy in AI agent design. VR pro-
+vides a shared spatial environment where learners can observe
+agent behaviors, discuss design choices, and connect AI concepts
+with embodied interaction. Previous research on collaborative VR
+found that VR can improve knowledge acquisition, social presence,
+and collaboration quality [6]. Interactive VR environments can in-
+crease the germane cognitive load when embodied interactions are
+conceptually meaningful rather than decorative [5]. For AI agent
+specification, VR is especially suitable because PEAS components
+are spatial and physical: sensors perceive, actuators act, and envi-
+ronments constrain. VR makes these components observable and
+jointly inspectable, transforming the specification into an embod-
+ied social activity where partners can see, discuss, and manipulate
+shared agent components [6, 7, 10]. This aligns with the theory of
+embodied interaction, which argues that spatial engagement with
+a system can shape how learners reason about it [3].
+3 Design Goals
+CollabPEAS is designed to help non-technical learners understand
+AI agents as systems whose behavior results from connected choices
+about performance measures, environment, sensors, actuators, and
+decision rules. The three design goals below (DG1–DG3) state what
+learners must achieve; Sections 4.1 and 4.2 describe how each is
+performed.
+•Make the PEAS framework observable and consequen-
+tial(DG1). Existing AI literacy interventions often teach
+about AI agents conceptually, but rarely let learners see
+how specification decisions produce agent behaviors [11].
+=== PAGE 3 ===
+CollabPEAS: A Collaborative VR System for Learning AI Agent Design Through the PEAS Framework CSCW Companion ’26, October 10–14, 2026, Salt Lake City, UT, USA
+Because PEAS links performance measures, environments,
+actuators, and sensors with resulting behavior [16], learners
+need to see the consequences of their choices, not only their
+labels. We therefore set DG1: every specification decision
+must be immediately observable in the robot’s behavior.
+•Support learning through progressive scaffolding(DG2).
+PEAS involves four interdependent components that must
+be understood together, but presenting them all at once can
+overwhelm non-technical learners [11]. Structured progres-
+sions in block-based environments support computational
+thinking without programming prerequisites [14, 19]. For
+example, learners should grasp why a performance measure
+matters before choosing sensors to achieve it, not encoun-
+tering all four components at once. We therefore set DG2:
+learners must build their specification one component at a
+time, preserving how each constrains the next.
+•Collaborative scaffold agent design(DG3). The speci-
+fication of AI agents is collaborative in practice [16], and
+collaboration matters for the learning of AI literacy [11].
+However, unstructured collaboration can be less productive
+for novices [2, 17], while fixed roles can limit shared own-
+ership [20]. For example, if either partner could unilaterally
+finalize a sensor choice, one learner could dominate while
+the other disengages. We therefore set DG3: partners must
+negotiate and jointly own each decision, not work in parallel
+or under fixed roles.
+4 System Design
+CollabPEAS is a multiplayer VR learning environment built in
+Unity 6 for Meta Quest headsets, using Photon Fusion 2 with Shared
+Authority topology for real-time synchronization. Both participants
+occupy the same virtual space with access to all shared objects. The
+system has two main components: the PEAS-Guided Design Flow
+(Section 4.1), which addresses DG1 and DG2, and the Collaboration
+Design Supports (Section 4.2), which address DG3.
+4.1 PEAS-Guided Design Flow
+The learning experience to realize DG1 (observability) and DG2
+(progressive scaffolding) is a five-step design flow in which dyads
+collaboratively specify a household cleaning robot, tying each PEAS
+choice to observable behavior (DG1) while introducing components
+incrementally rather than all at once (DG2).
+•Define purpose and performance measures. Participants
+identify what their robot is for and how to evaluate its suc-
+cess, distinguishing a goal (“clean the apartment”) from a
+performance measure (“percent of floor area cleared in 10
+minutes”) that determines how the agent behaves.
+•Characterize environment and select sensors. Partic-
+ipants walk through the 3D apartment and select which
+sensors (camera, distance, touch, etc.) to mount on their ro-
+bot; different sensor choices yield different robot behaviors
+in the same environment, making perception and capability
+directly observable (DG1).
+•Choose actuators. Participants select the physical capabili-
+ties (wheels, arms, cleaning tools) that define what the robot
+can do, connecting each selection back to the performance
+measure: if the measure requires a behavior, the actuators
+must be capable of producing it.
+•Program agent behavior through block-based coding.
+Participants specify the robot’s decision logic by arranging
+pre-coded draggable 3D block cards into four-slot chains:
+SENSE →CONDITION →ACTION →CONTROL. The
+system enforces compatibility between blocks: a Distance
+Sensor block returns NEAR, FAR, or BLOCKED, so only an
+obstacle condition such as IF obstacle NEAR can snap into
+Slot 2, while a condition reading a different sensor’s value,
+such as IF floor DIRTY, bounces back with a brief label. Each
+completed chain is a discrete decision rule; because all rules
+run in parallel and whichever sensor fires first on a given tick
+triggers its rule’s action, the robot’s behavior emerges from
+the environment rather than a fixed script. No programming
+knowledge is required [9], which operationalizes DG2 by
+letting non-technical learners engage directly in decision-
+rule construction.
+•Test, debug and revision; Participants observe their robot
+running in the apartment and identify mismatches between
+the intended and observed behavior. The debug loop is scaf-
+folded as design reasoning rather than error correction: the
+productive question is not “what is broken?” but “is the agent
+rational given what we have specified, and if not, which
+PEAS component needs to change?”
+4.2 Collaboration Design Supports
+To address DG3 (scaffolded collaboration), the system offers five col-
+laboration supports for how partners coordinate within the PEAS
+workflow, communicating throughout via in-VR voice chat. The
+supports occupy a middle ground between fully symmetric access
+and fully role-assigned collaboration, drawing on evidence that
+unstructured collaboration can be less effective than structured
+alternatives [17] and that shared control with awareness tools im-
+proves collaboration quality in VR [6].
+•Agree-before-placing. When one participant drags a block
+toward a placement slot, it enters a pending state visible to
+both; the second participant must approve, request discus-
+sion, or suggest an alternative before the placement takes
+effect. The mechanism keeps every specification decision ex-
+plicitly agreed on, creating a window for verbal negotiation.
+•Alternating lead-reviewer roles. Each design step assigns
+one participant as lead (initiating placements) and the other
+as reviewer (approving, rejecting, or suggesting changes),
+with roles alternating each step so that both experience both
+perspectives. This balances evidence that role-based struc-
+ture improves learning outcomes [17] with preserving shared
+ownership, since alternating assignments avoid permanently
+excluding either participant.
+•Structured inter-step reflection prompts. At each transi-
+tion between steps, the system pauses and presents a joint
+reflection question both participants must answer before
+proceeding, e.g., after sensor selection: “Do you both agree
+these sensors give the robot enough information to do its
+job?” These prompts aim to create checkpoints for alignment
+and connect each new decision back to those already made.
+=== PAGE 4 ===
+CSCW Companion ’26, October 10–14, 2026, Salt Lake City, UT, USA •Contribution awareness display. A persistent visual in-
+dicator will show each participant’s relative contribution
+(blocks placed, log entries, debug moves), updated in real
+time. Rather than scoring performance, it functions as a mu-
+tual awareness tool for self-regulating contribution equity,
+drawing on evidence that shared awareness tools improve
+communication quality in collaborative VR [6].
+•Dual observation logging. During Test, debug, and revise,
+both participants will independently mark observations in
+a shared log as they watch the robot execute; the system
+then highlights agreement or divergence, creating discussion
+points for debugging. The goal is to turn debugging from a
+single-perspective activity into a collaborative comparison
+of interpretations [12].
+These supports aim to structure the joint specification enough
+to prevent coordination failures associated with fully symmetric
+access [17], while preserving the shared ownership that defines
+collaborative problem solving [15]. Such a structure can also intro-
+duce friction, slow exploration, or add pressure to negotiate every
+move; we treat the right level of structure as an open question our
+planned evaluation will examine, including whether some supports
+should be loosened as partners become more familiar with the task.
+5 Conclusion and Future Work
+CollabPEAS is a collaborative AI-literacy system currently under
+active development. The PEAS-guided design flow, the block-based
+coding interface, and the VR environment are implemented in Unity
+6 with Photon Fusion 2 networking, and the five collaboration
+supports are fully specified.
+Once these supports are implemented, we plan to evaluate the
+complete system through a mixed-methods between-subject study
+with non-technical participants recruited on campus, testing in Au-
+gust, comparing the VR condition against a functionally equivalent
+2D desktop interface. This comparison is designed in part to assess
+whether the learning advantages persist beyond the novelty effects
+documented in VR learning research [4]. The evaluation will assess
+the AI literacy outcomes through pre/post knowledge assessments
+aligned with the targeted competencies of [11], attitudinal changes
+through an adapted AI Literacy Questionnaire [13], and collabora-
+tive dynamics through behavioral logs, mid-session collaboration
+checks and semi-structured interviews analyzed through thematic
+analysis [1].
+Within this evaluation, a central focus is whether the collab-
+oration supports produce more equitable participation and more
+verbal negotiation than would emerge from fully symmetric access
+alone, and whether this, in turn, is associated with a deeper concep-
+tual understanding of how the PEAS components relate to agent
+behavior [17, 20]. Whether this expectation holds, and how the
+five supports compare to one another remain open empirical ques-
+tions. We hope that the findings will be useful to researchers and
+designers in the Computer-Supported Cooperative Work (CSCW)
+community who work on collaborative tools for technical learning.
+References
+[1] Virginia Braun and Victoria Clarke. 2006. Using Thematic Analysis in Psychology.
+Qualitative Research in Psychology 3, 2 (2006), 77–101.
+Wanru (Jovie) Li, Yichen (Andy) Yu, and Qiao (Georgie) Jin
+[2] Pierre Dillenbourg. 2002. Over-Scripting CSCL: The Risks of Blending Collab-
+orative Learning with Instructional Design. In Three Worlds of CSCL: Can We
+Support CSCL? Open Universiteit Nederland, 61–91.
+[3] Paul Dourish. 2001. Where the Action Is: The Foundations of Embodied Interaction.
+MIT Press.
+[4] David Hamilton, Jayne McKechnie, Edward Edgerton, and Claire Wilson. 2021.
+Immersive Virtual Reality as a Pedagogical Tool in Education: A Systematic
+Literature Review of Quantitative Learning Outcomes and Experimental Design.
+Journal of Computers in Education 8, 1 (2021), 1–32.
+[5] Qiao Jin, Yuxuan Huang, Yu Liu, Bo Han, Feng Qian, and Svetlana Yarosh. 2025.
+An Exploratory Study of Using Interactive Volumetric Video in VR for Embodied
+Learning. In Proceedings of the International Conference of the Learning Sciences
+(ICLS 2025). ISLS, 2089–2094.
+[6] Qiao Jin, Yu Liu, Ruixuan Sun, Chen Chen, Puqi Zhou, Bo Han, Feng Qian, and
+Svetlana Yarosh. 2023. Collaborative Online Learning with VR Video: Roles of
+Collaborative Tools and Shared Video Control. In Proceedings of the 2023 CHI
+Conference on Human Factors in Computing Systems. ACM, 1–18.
+[7] Mina C. Johnson-Glenberg. 2018. Immersive VR and Education: Embodied Design
+Principles That Include Gesture and Hand Controls. Frontiers in Robotics and AI
+5 (2018), 81.
+[8] Martin Kandlhofer, Gerald Steinbauer, Sabine Hirschmugl-Gaisch, and Petra
+Huber. 2016. Artificial Intelligence and Computer Science in Education: From
+Kindergarten to University. In Proceedings of the 2016 IEEE Frontiers in Education
+Conference (FIE). IEEE, 1–9.
+[9] Andrew J. Ko, Robin Abraham, Laura Beckwith, Alan Blackwell, Margaret Burnett,
+Martin Erwig, Chris Scaffidi, Joseph Lawrance, Henry Lieberman, Brad Myers,
+Mary Beth Rosson, Gregg Rothermel, Mary Shaw, and Susan Wiedenbeck. 2011.
+The State of the Art in End-User Software Engineering. ACM Computing Surveys
+43, 3 (2011), 21.
+[10] Robb Lindgren and Mina Johnson-Glenberg. 2013. Emboldened by Embodiment:
+Six Precepts for Research on Embodied Learning and Mixed Reality. Educational
+Researcher 42, 8 (2013), 445–452.
+[11] Duri Long and Brian Magerko. 2020. What is AI Literacy? Competencies and
+Design Considerations. In Proceedings of the 2020 CHI Conference on Human
+Factors in Computing Systems. ACM, 1–16.
+[12] Neil Mercer. 2000. Words and Minds: How We Use Language to Think Together.
+Routledge.
+[13] Davy Tsz Kit Ng, Jac Ka Lok Leung, Samuel Kai Wah Chu, and Maggie Shen Qiao.
+2023. Design and Validation of the AI Literacy Questionnaire: The Affective,
+Behavioural, Cognitive, and Ethical Approach. British Journal of Educational
+Technology 54, 4 (2023), 1082–1104.
+[14] Mitchel Resnick, John Maloney, Andres Monroy-Hernandez, Natalie Rusk, Evelyn
+Eastmond, Karen Brennan, Amon Millner, Eric Rosenbaum, Jay Silver, Brian
+Silverman, and Yasmin Kafai. 2009. Scratch: Programming for All. Commun. ACM
+52, 11 (2009), 60–67.
+[15] Jeremy Roschelle and Stephanie D. Teasley. 1995. The Construction of Shared
+Knowledge in Collaborative Problem Solving. In Computer Supported Collabora-
+tive Learning. Springer, 69–97.
+[16] Stuart J. Russell and Peter Norvig. 2010. Intelligent Agents. In Artificial Intelligence:
+A Modern Approach (3rd ed.). Prentice Hall, 36–58.
+[17] Xinyuan Wang, Qian Xing, Qiao Jin, and Danli Wang. 2024. “Be a Lighting
+Programmer”: Supporting Children’s Collaborative Learning Through Tangible
+Programming. International Journal of Human-Computer Interaction 40, 10 (2024),
+2621–2639.
+[18] Randi Williams, Hae Won Park, Lauren Oh, and Cynthia Breazeal. 2019. PopBots:
+Designing an Artificial Intelligence Curriculum for Early Childhood Education.
+In Proceedings of the AAAI Conference on Artificial Intelligence, Vol. 33. 9729–9736.
+[19] Jeannette M. Wing. 2006. Computational Thinking. Commun. ACM 49, 3 (2006),
+33–35.
+[20] Zheng Zhang, Ying Xu, Yanhao Wang, Bingsheng Yao, Daniel Ritchie, Tong-
+shuang Wu, Mo Yu, Dakuo Wang, and Toby Jia-Jun Li. 2022. StoryBuddy: A
+Human-AI Collaborative Chatbot for Parent-Child Interactive Storytelling with
+Flexible Parental Involvement. In Proceedings of the 2022 CHI Conference on Hu-
+man Factors in Computing Systems. ACM, 1–21.

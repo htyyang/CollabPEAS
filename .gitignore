@@ -1,0 +1,25 @@
+# OS
+.DS_Store
+.tmp_cache/
+*.log
+
+# Unity temporary and generated folders
+fusion-vr-training-2.0.6/[Ll]ibrary/
+fusion-vr-training-2.0.6/[Tt]emp/
+fusion-vr-training-2.0.6/[Oo]bj/
+fusion-vr-training-2.0.6/[Bb]uild/
+fusion-vr-training-2.0.6/[Bb]uilds/
+fusion-vr-training-2.0.6/[Ll]ogs/
+fusion-vr-training-2.0.6/[Uu]ser[Ss]ettings/
+fusion-vr-training-2.0.6/[Mm]emoryCaptures/
+fusion-vr-training-2.0.6/*.apk
+fusion-vr-training-2.0.6/*.csproj
+fusion-vr-training-2.0.6/*.sln
+fusion-vr-training-2.0.6/*.slnx
+fusion-vr-training-2.0.6/FusionTraining Unity6_BurstDebugInformation_DoNotShip/
+
+# Large 3D binary material packages
+Materials/*.glb
+Materials/*.fbx
+Materials/*.unitypackage
+collabpeas-2d/assets/*.glb
