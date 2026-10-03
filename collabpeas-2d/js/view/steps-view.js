@@ -557,6 +557,7 @@ export class StepsView {
             <button class="btn btn-success sim-play-btn" id="simPlayBtn">▶ Run Simulation</button>
             <button class="btn btn-warning sim-pause-btn" id="simPauseBtn">⏸ Pause</button>
             <button class="btn btn-outline sim-reset-btn" id="simResetBtn">↺ Reset Activity</button>
+            <button class="btn btn-outline watch-map-btn" id="watchInMapBtn" title="Close modal and observe robot on full-screen map">↗ Watch in Full-Screen Map</button>
           </div>
           <div class="speed-control">
             <span>Speed:</span>
@@ -679,6 +680,11 @@ export class StepsView {
     this.panel.querySelector('#simResetBtn')?.addEventListener('click', () => {
       window.simEngine?.reset();
       sound.playChime();
+    });
+
+    this.panel.querySelector('#watchInMapBtn')?.addEventListener('click', () => {
+      window.closeStepModal?.();
+      sound.playClick();
     });
 
     this.panel.querySelectorAll('.speed-btn').forEach(btn => {

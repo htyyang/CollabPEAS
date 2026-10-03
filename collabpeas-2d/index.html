@@ -8,79 +8,183 @@
   <link rel="stylesheet" href="styles/blocks.css" />
 </head>
 <body>
-  <div class="app-container">
-    <!-- Header -->
-    <header class="app-header">
-      <div class="brand-section">
-        <span class="brand-logo">🤖</span>
-        <div>
-          <div class="brand-title">CollabPEAS 2D</div>
-          <div class="brand-sub">Collaborative AI Agent Specification • CSCW '26</div>
+  <!-- 1. Full-Screen 2D Realistic Apartment Map Layer -->
+  <div class="fullscreen-house-container" id="fullscreenHouseContainer">
+    <canvas id="houseCanvas"></canvas>
+
+    <!-- Floating On-Screen Navigation & Interaction Hints (Bottom Left) -->
+    <div class="map-controls-hint">
+      <span class="hint-key">🎮 Move</span> Arrow Keys / WASD
+      <span class="hint-sep">•</span>
+      <span class="hint-key">🖱️ Pan</span> Drag
+      <span class="hint-sep">•</span>
+      <span class="hint-key">📜 Zoom</span> Wheel
+      <span class="hint-sep">•</span>
+      <span class="hint-key">⚡ Fast-Travel</span> Click Blue Teleport Pads
+      <span class="hint-sep">•</span>
+      <span class="hint-key">🎯 Stations</span> Walk to Ring & Press [SPACE]
+    </div>
+
+    <!-- Map View Actions (Bottom Right) -->
+    <div class="map-view-actions">
+      <button class="btn-glass" id="recenterMapBtn" title="Fit & Center Entire Apartment">
+        ⛶ Fit Map
+      </button>
+      <button class="btn-glass btn-highlight" id="openWorkstationFabBtn" title="Open PEAS Workstation">
+        📋 Workstation [SPACE]
+      </button>
+    </div>
+
+    <!-- Floating Live Simulation HUD (Bottom Center, for observing & testing) -->
+    <div id="simFloatingHud" class="sim-floating-hud">
+      <div class="sim-hud-status">
+        <span class="hud-status-dot running" id="hudStatusDot"></span>
+        <span class="hud-status-text" id="hudStatusText">SIM RUNNING</span>
+        <span class="hud-tick-pill" id="hudTickText">Tick 0</span>
+      </div>
+
+      <div class="sim-hud-controls">
+        <button class="btn-hud-icon" id="hudPlayPauseBtn" title="Play/Pause Simulation">⏸</button>
+        <div class="hud-speed-group">
+          <button class="hud-speed-btn active" data-speed="1">1x</button>
+          <button class="hud-speed-btn" data-speed="2">2x</button>
+          <button class="hud-speed-btn" data-speed="5">5x</button>
+        </div>
+        <button class="btn-hud-icon" id="hudResetBtn" title="Reset Simulation">↺</button>
+      </div>
+
+      <div class="sim-hud-metrics">
+        <div class="hud-metric-item" title="Composite PEAS Score">
+          <span class="hud-metric-label">PEAS</span>
+          <span class="hud-metric-val" id="hudPeasScore">80.0</span>
+        </div>
+        <div class="hud-metric-item" title="Floor Coverage Percentage">
+          <span class="hud-metric-label">Coverage</span>
+          <span class="hud-metric-val" id="hudCoverageScore">0%</span>
+        </div>
+        <div class="hud-metric-item" title="Safety Score">
+          <span class="hud-metric-label">Safety</span>
+          <span class="hud-metric-val" id="hudSafetyScore">100%</span>
         </div>
       </div>
 
-      <!-- Step Navigation Tracker -->
-      <nav class="steps-nav-tracker">
-        <button class="step-nav-item active" data-step="1">1. Purpose (P)</button>
-        <button class="step-nav-item" data-step="2">2. World & Sensors (E+S)</button>
-        <button class="step-nav-item" data-step="3">3. Actuators (A)</button>
-        <button class="step-nav-item" data-step="4">4. Decision Logic</button>
-        <button class="step-nav-item" data-step="5">5. Test & Debug</button>
-      </nav>
+      <!-- Quick Stamp Controls for Dyadic CSCW Study -->
+      <div class="sim-hud-stamps">
+        <span class="hud-stamp-label">Stamp Observation:</span>
+        <button class="hud-stamp-btn pass" id="hudStampPass" title="Mark Specification Match (✓)">✓</button>
+        <button class="hud-stamp-btn fail" id="hudStampFail" title="Mark Specification Violation (✗)">✗</button>
+        <button class="hud-stamp-btn query" id="hudStampQuery" title="Mark Ambiguous / Needs Discussion (?)">?</button>
+      </div>
 
-      <!-- Header Action Controls -->
-      <div class="header-actions">
-        <!-- Player Switcher (CSCW Dyadic Collaboration) -->
-        <div class="player-role-switcher">
-          <button class="player-btn active player-a" id="playerToggleA">Player A (Lead)</button>
-          <button class="player-btn player-b" id="playerToggleB">Player B (Reviewer)</button>
+      <button class="btn btn-sm btn-primary-glass" id="hudOpenLabBtn">
+        Open Step 5 Lab ↗
+      </button>
+    </div>
+
+    <!-- Robot POV Modal Overlay -->
+    <div id="robotPovModal"></div>
+  </div>
+
+  <!-- 2. Floating Top Navigation Header -->
+  <header class="app-header floating-header">
+    <div class="brand-section">
+      <span class="brand-logo">🤖</span>
+      <div>
+        <div class="brand-title">CollabPEAS 2D</div>
+        <div class="brand-sub">Collaborative AI Agent Specification • CSCW '26</div>
+      </div>
+    </div>
+
+    <!-- Step Navigation Tracker Pills (Click to open that step in modal) -->
+    <nav class="steps-nav-tracker" id="topStepsNav">
+      <button class="step-nav-item active" data-step="1">
+        <span class="step-icon">🎯</span> 1. Purpose (P)
+      </button>
+      <button class="step-nav-item" data-step="2">
+        <span class="step-icon">📡</span> 2. Sensors (E+S)
+      </button>
+      <button class="step-nav-item" data-step="3">
+        <span class="step-icon">🦾</span> 3. Actuators (A)
+      </button>
+      <button class="step-nav-item" data-step="4">
+        <span class="step-icon">🧩</span> 4. Decision Logic
+      </button>
+      <button class="step-nav-item" data-step="5">
+        <span class="step-icon">🔬</span> 5. Test & Debug
+      </button>
+    </nav>
+
+    <!-- Header Action Controls -->
+    <div class="header-actions">
+      <!-- Player Switcher (CSCW Dyadic Collaboration) -->
+      <div class="player-role-switcher" title="Switch active participant role">
+        <button class="player-btn active player-a" id="playerToggleA">Player A (Lead)</button>
+        <button class="player-btn player-b" id="playerToggleB">Player B (Reviewer)</button>
+      </div>
+
+      <!-- Mutual Contribution Awareness Display (CSCW 4.2) -->
+      <div class="contribution-mini-display" title="Mutual Contribution Equity">
+        <div class="contrib-label-row">
+          <span>Equity</span>
+          <span id="contribStatsText">A: 0 | B: 0</span>
+        </div>
+        <div class="contrib-progress-bar">
+          <div class="contrib-fill-a" id="contribRatioA" style="width: 50%;"></div>
+        </div>
+      </div>
+
+      <!-- View Mode Toggle (Architectural vs Hybrid) -->
+      <button class="btn btn-sm btn-outline" id="viewModeToggleBtn" title="Switch architectural blueprint or hybrid view">
+        📐 Blueprint
+      </button>
+
+      <!-- Robot POV Quick Button -->
+      <button class="btn btn-sm btn-outline" id="quickPovBtn" title="View through robot sensors">
+        👁️ Robot POV
+      </button>
+
+      <!-- Audio Mute Toggle -->
+      <button class="btn btn-sm btn-ghost" id="muteToggleBtn" title="Toggle sound effects">
+        🔊 Audio On
+      </button>
+
+      <!-- Open Workstation Button -->
+      <button class="btn btn-sm btn-primary open-workstation-btn" id="openWorkstationBtn">
+        📋 Workstation
+      </button>
+    </div>
+  </header>
+
+  <!-- 3. Step Selection & Workstation Popup Modal Dialog -->
+  <div id="stepModalOverlay" class="step-modal-overlay" style="display: none;">
+    <div class="step-modal-dialog">
+      <!-- Modal Header with Quick Step Tabs and Close Button -->
+      <div class="step-modal-header">
+        <div class="modal-header-meta">
+          <span class="modal-badge-step" id="modalStepBadge">STEP 1 OF 5</span>
+          <h2 id="modalStepHeading">Purpose & Performance Measures (P)</h2>
         </div>
 
-        <!-- Mutual Contribution Awareness Display (CSCW 4.2) -->
-        <div class="contribution-mini-display" title="Mutual Contribution Equity">
-          <div class="contrib-label-row">
-            <span>Equity</span>
-            <span id="contribStatsText">A: 6 | B: 5</span>
-          </div>
-          <div class="contrib-progress-bar">
-            <div class="contrib-fill-a" id="contribRatioA" style="width: 55%;"></div>
-          </div>
+        <!-- Step Tabs within the Modal -->
+        <div class="modal-step-tabs" id="modalStepTabs">
+          <button class="modal-tab-btn active" data-step="1">1. Purpose</button>
+          <button class="modal-tab-btn" data-step="2">2. Sensors</button>
+          <button class="modal-tab-btn" data-step="3">3. Actuators</button>
+          <button class="modal-tab-btn" data-step="4">4. Logic</button>
+          <button class="modal-tab-btn" data-step="5">5. Test & Debug</button>
         </div>
 
-        <!-- View Mode Toggle (Architectural vs Hybrid) -->
-        <button class="btn btn-sm btn-outline" id="viewModeToggleBtn" title="Switch architectural blueprint or hybrid view">
-          📐 Blueprint
-        </button>
-
-        <!-- Robot POV Quick Button -->
-        <button class="btn btn-sm btn-outline" id="quickPovBtn" title="View through robot sensors">
-          👁️ Robot POV
-        </button>
-
-        <!-- Audio Mute Toggle -->
-        <button class="btn btn-sm btn-ghost" id="muteToggleBtn" title="Toggle sound effects">
-          🔊 Audio On
+        <button class="modal-close-btn" id="stepModalCloseBtn" title="Close to Fullscreen Map (Esc)">
+          ✕ Close [Esc]
         </button>
       </div>
-    </header>
 
-    <!-- Main Split Layout -->
-    <main class="main-content">
-      <!-- Left Panel: 2D Interactive House Canvas -->
-      <section class="house-view-panel">
-        <div class="house-canvas-wrap">
-          <canvas id="houseCanvas"></canvas>
-          <!-- Robot POV Modal Overlay -->
-          <div id="robotPovModal"></div>
-        </div>
-      </section>
-
-      <!-- Right Panel: Step Panels & Workstations -->
-      <section class="step-content-panel">
+      <!-- Modal Body Content -->
+      <div class="step-modal-body">
         <div id="stepsPanelMount"></div>
         <div id="blockCanvasMount" style="display: none;"></div>
-      </section>
-    </main>
+      </div>
+    </div>
   </div>
 
   <!-- Main JavaScript Module Entry -->
