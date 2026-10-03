@@ -345,6 +345,14 @@ export class StepsView {
   // -------------------------------------------------------------
   renderStep3() {
     const installed = appState.installedActuators;
+    const requiredActuators = [
+      'ACTUATOR_WHEELS', 'ACTUATOR_ROTATION', 'ACTUATOR_ESTOP',
+      'ACTUATOR_VACUUM', 'ACTUATOR_MOP', 'ACTUATOR_ARM_EXT',
+      'ACTUATOR_GRIP_CLOSE', 'ACTUATOR_GRIP_OPEN', 'ACTUATOR_ARM_RET',
+      'ACTUATOR_DOCK_PIN'
+    ];
+    const installedRequiredCount = requiredActuators.filter(id => installed.has(id)).length;
+    const assemblyPct = Math.round((installedRequiredCount / requiredActuators.length) * 100);
 
     this.panel.innerHTML = `
       <div class="step-view-card">
@@ -352,10 +360,82 @@ export class StepsView {
           <div class="step-tag">Step 3 of 5 • PEAS: Actuators (A)</div>
           <h2>🦾 Mount Physical Actuators & Robot Hardware</h2>
           <p class="step-desc">
-            Select the physical capabilities (drive wheels, rotation pivot, vacuum suction, mop pad,
+            Select physical capabilities (drive wheels, rotation pivot, vacuum suction, mop pad,
             robotic arm, gripper, docking pin) that determine what actions your robot can physically execute.
             Actions programmed without their required actuator will fail.
           </p>
+        </div>
+
+        <!-- Magnetic Structure Assembly Bay (Inspired by Fusion VR Training ActivityMagnetStructureAttachment) -->
+        <div class="assembly-bay-card">
+          <div class="bay-header">
+            <div>
+              <h4>🧲 Magnetic Structure Assembly Bay</h4>
+              <span class="bay-sub">Live Hardware Snapping Pedestal • Fusion VR Training Mechanics</span>
+            </div>
+            <div class="assembly-meter">
+              <span class="meter-score">${installedRequiredCount} / ${requiredActuators.length} Required Modules (${assemblyPct}%)</span>
+              <div class="meter-track">
+                <div class="meter-bar" style="width: ${assemblyPct}%; background: ${assemblyPct >= 100 ? '#22c55e' : '#38bdf8'}"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Robot Visual Assembly Diagram -->
+          <div class="robot-schematic-diagram">
+            <div class="schematic-center">
+              <div class="robot-chassis-core">
+                <span class="core-label">CHASSIS CORE</span>
+                <span class="core-status ${installed.has('ACTUATOR_LED') ? 'glowing' : ''}">
+                  ${installed.has('ACTUATOR_LED') ? '🚨 LED HALO ACTIVE' : 'NO STATUS LIGHT'}
+                </span>
+              </div>
+            </div>
+
+            <!-- Magnetic Slots Around Chassis -->
+            <div class="schematic-slots-grid">
+              <div class="schematic-slot ${installed.has('ACTUATOR_WHEELS') ? 'attached' : 'empty'}" data-act-id="ACTUATOR_WHEELS">
+                <span class="slot-icon">⚙️</span>
+                <span class="slot-name">Drive Wheels</span>
+                <span class="slot-magnet-badge">${installed.has('ACTUATOR_WHEELS') ? 'BONDED' : 'OPEN'}</span>
+              </div>
+              <div class="schematic-slot ${installed.has('ACTUATOR_ROTATION') ? 'attached' : 'empty'}" data-act-id="ACTUATOR_ROTATION">
+                <span class="slot-icon">🔄</span>
+                <span class="slot-name">Turntable Pivot</span>
+                <span class="slot-magnet-badge">${installed.has('ACTUATOR_ROTATION') ? 'BONDED' : 'OPEN'}</span>
+              </div>
+              <div class="schematic-slot ${installed.has('ACTUATOR_ESTOP') ? 'attached' : 'empty'}" data-act-id="ACTUATOR_ESTOP">
+                <span class="slot-icon">🛑</span>
+                <span class="slot-name">Emergency Brake</span>
+                <span class="slot-magnet-badge">${installed.has('ACTUATOR_ESTOP') ? 'BONDED' : 'OPEN'}</span>
+              </div>
+              <div class="schematic-slot ${installed.has('ACTUATOR_VACUUM') ? 'attached' : 'empty'}" data-act-id="ACTUATOR_VACUUM">
+                <span class="slot-icon">🌪️</span>
+                <span class="slot-name">Vacuum Suction</span>
+                <span class="slot-magnet-badge">${installed.has('ACTUATOR_VACUUM') ? 'BONDED' : 'OPEN'}</span>
+              </div>
+              <div class="schematic-slot ${installed.has('ACTUATOR_MOP') ? 'attached' : 'empty'}" data-act-id="ACTUATOR_MOP">
+                <span class="slot-icon">🧽</span>
+                <span class="slot-name">Mop Deployer</span>
+                <span class="slot-magnet-badge">${installed.has('ACTUATOR_MOP') ? 'BONDED' : 'OPEN'}</span>
+              </div>
+              <div class="schematic-slot ${installed.has('ACTUATOR_ARM_EXT') ? 'attached' : 'empty'}" data-act-id="ACTUATOR_ARM_EXT">
+                <span class="slot-icon">🦾</span>
+                <span class="slot-name">Telescopic Arm</span>
+                <span class="slot-magnet-badge">${installed.has('ACTUATOR_ARM_EXT') ? 'BONDED' : 'OPEN'}</span>
+              </div>
+              <div class="schematic-slot ${installed.has('ACTUATOR_GRIP_CLOSE') ? 'attached' : 'empty'}" data-act-id="ACTUATOR_GRIP_CLOSE">
+                <span class="slot-icon">✊</span>
+                <span class="slot-name">Gripper Claw</span>
+                <span class="slot-magnet-badge">${installed.has('ACTUATOR_GRIP_CLOSE') ? 'BONDED' : 'OPEN'}</span>
+              </div>
+              <div class="schematic-slot ${installed.has('ACTUATOR_DOCK_PIN') ? 'attached' : 'empty'}" data-act-id="ACTUATOR_DOCK_PIN">
+                <span class="slot-icon">🔌</span>
+                <span class="slot-name">Docking Pin</span>
+                <span class="slot-magnet-badge">${installed.has('ACTUATOR_DOCK_PIN') ? 'BONDED' : 'OPEN'}</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Grouped Actuator Library (14 Actuators) -->
@@ -374,7 +454,7 @@ export class StepsView {
                           <span class="act-icon">${act.icon}</span>
                           <strong>${act.name}</strong>
                           <button class="act-toggle-btn ${isMounted ? 'btn-remove' : 'btn-add'}">
-                            ${isMounted ? '✓ Mounted' : '+ Mount'}
+                            ${isMounted ? '✓ Bonded' : '+ Attach'}
                           </button>
                         </div>
                         <p class="act-does"><strong>Does:</strong> ${act.does}</p>
@@ -449,12 +529,34 @@ export class StepsView {
           </p>
         </div>
 
+        <!-- Fusion VR Training Control Stand Kiosk Display (Inspired by ControlStandActivityStatusUI) -->
+        <div class="control-stand-kiosk">
+          <div class="kiosk-header">
+            <span class="kiosk-badge">🖥️ FUSION VR CONTROL STAND</span>
+            <span class="kiosk-status" id="kioskActivityStatus">● ACTIVITY IN PROGRESS (10Hz SHARED TICK)</span>
+          </div>
+          <div class="kiosk-body">
+            <div class="kiosk-metric">
+              <span class="kiosk-lbl">Role Authority:</span>
+              <strong class="kiosk-val" id="kioskUserRole">${appState.activePlayerId} (${appState.playerRoles[appState.activePlayerId]})</strong>
+            </div>
+            <div class="kiosk-metric">
+              <span class="kiosk-lbl">Active Activity:</span>
+              <strong class="kiosk-val">PEAS Agent Specification & Test</strong>
+            </div>
+            <div class="kiosk-metric">
+              <span class="kiosk-lbl">Target Environment:</span>
+              <strong class="kiosk-val">Apartment (8 Rooms + Workshop)</strong>
+            </div>
+          </div>
+        </div>
+
         <!-- Simulation Control Bar -->
         <div class="sim-control-bar">
           <div class="btn-group">
             <button class="btn btn-success sim-play-btn" id="simPlayBtn">▶ Run Simulation</button>
             <button class="btn btn-warning sim-pause-btn" id="simPauseBtn">⏸ Pause</button>
-            <button class="btn btn-outline sim-reset-btn" id="simResetBtn">↺ Reset</button>
+            <button class="btn btn-outline sim-reset-btn" id="simResetBtn">↺ Reset Activity</button>
           </div>
           <div class="speed-control">
             <span>Speed:</span>

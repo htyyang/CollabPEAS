@@ -115,7 +115,15 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!isMuted) sound.playClick();
   });
 
-  // 9. Quick POV Button in Top Bar
+  // 9. View Mode Toggle (Architectural vs Hybrid)
+  const viewModeBtn = document.getElementById('viewModeToggleBtn');
+  viewModeBtn?.addEventListener('click', () => {
+    const mode = houseCanvas.toggleViewMode();
+    viewModeBtn.innerText = mode === 'architectural' ? '📐 Blueprint' : '🖼️ Hybrid';
+    sound.playClick();
+  });
+
+  // 10. Quick POV Button in Top Bar
   const quickPovBtn = document.getElementById('quickPovBtn');
   quickPovBtn?.addEventListener('click', () => {
     appState.isRobotPovActive = !appState.isRobotPovActive;

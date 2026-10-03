@@ -8,10 +8,14 @@ In the original research design, the lab developed a multiplayer immersive 3D VR
 
 This 2D application satisfies this requirement by preserving:
 1. **The complete 5-step PEAS-guided design flow** (Performance measure, Environment, Actuators, Sensors, and Decision Logic).
-2. **Spatially grounded exploration in a 2D house blueprint** derived directly from the project's 3D apartment assets (`Materials/Apartment.png`).
-3. **Operator avatar locomotion** controlled via Arrow Keys / WASD, allowing the learner to physically navigate between household rooms and interact with spatial stations.
-4. **The full 64-block decision logic library** arranged in strict 4-slot chains (`SENSE` ➔ `CONDITION` ➔ `ACTION` ➔ `CONTROL`) with compatibility validation and parallel 10Hz execution.
-5. **The five CSCW collaborative design supports**:
+2. **A truly constructed 2D architectural house map** based on the apartment layout (`Materials/Apartment.png`) with expanded rooms (Living Room, Kitchen, Dining Room, Master Bed, Luxury Bath, Corridor, **Robot Assembly & Maintenance Bay**, and **Outdoor Terrace / Balcony**).
+3. **Operator avatar locomotion** controlled via Arrow Keys / WASD / click-to-walk, with 2-meter proximity halo detection.
+4. **Key mechanics from the Photon Fusion VR Training sample** (`https://doc.photonengine.com/arvr/v1/cross-platform-samples/fusion-vr-training`):
+   - **Magnetic Structure Assembly Bay** (`ActivityMagnetStructureAttachment.cs`) with physical magnetic attachment points, snap guides, and progress percentage.
+   - **Interactive Control Stand Kiosk** (`ControlStandActivityStatusUI.cs`) showing real-time 10Hz tick telemetry, activity state, and role authority.
+   - **Teleportation Target Pads** (`TeleportTargetMarker.cs`) for fast-travel across rooms.
+5. **The full 64-block decision logic library** arranged in strict 4-slot chains (`SENSE` ➔ `CONDITION` ➔ `ACTION` ➔ `CONTROL`) with compatibility validation and parallel 10Hz execution.
+6. **The five CSCW collaborative design supports**:
    - Symmetrical dual-participant access (Player A / Player B toggle).
    - Mutual contribution awareness display (real-time equity tracking).
    - 2-second Verbal Agreement Protocol checkpoint before debugging.
@@ -28,6 +32,7 @@ The project is built as a zero-dependency, modern ES6 modular web application re
 collabpeas-2d/
 ├── index.html               # Main entry point & layout
 ├── server.js                # Lightweight zero-dependency HTTP static server
+├── README.md                # Quickstart guide
 ├── assets/
 │   └── Apartment.png        # High-res architectural layout of the apartment
 ├── styles/
@@ -43,10 +48,9 @@ collabpeas-2d/
 │   │   └── blocks.js        # 64 Decision blocks & compatibility validator
 │   ├── sim/
 │   │   ├── world.js         # 2D apartment coordinate model, collision, dirt, spills, NPCs
-│   │   ├── engine.js        # 10Hz simulation engine, parallel rule evaluator, scoring
-│   │   └── (scoring inside engine.js)
+│   │   └── engine.js        # 10Hz simulation engine, parallel rule evaluator, scoring
 │   ├── view/
-│   │   ├── house-canvas.js  # 2D Canvas renderer: blueprint, avatar, robot, cat, stations
+│   │   ├── house-canvas.js  # Truly constructed architectural vector canvas
 │   │   ├── pov-renderer.js  # Robot sensor-filtered POV visualization
 │   │   ├── block-canvas.js  # Visual 4-slot decision rule canvas & library palette
 │   │   ├── steps-view.js    # Dedicated UI panels for Steps 1 through 5
@@ -60,7 +64,31 @@ collabpeas-2d/
 
 ---
 
-## 3. PEAS 5-Step Learning Progression
+## 3. Truly Constructed 2D Architectural House Map
+
+Unlike static image overlays, the 2D House is **truly constructed with procedural vector drafting**:
+
+1. **Room Geometry & Floor Materials**:
+   - **Living Room**: Warm oak herringbone wood pattern.
+   - **Gourmet Kitchen**: Polished quartz / marble floor tiles with double sink, induction stovetop with glowing burners, and island counter.
+   - **Dining Room**: Dark walnut parquet wood flooring with round table and 4 cushioned chairs.
+   - **Master Bedroom**: Soft ash hardwood planks with king platform bed, layered duvet, pillows, and bedside nightstands.
+   - **Modern Bathroom**: Dark slate stone slabs with deep soaking tub, floating vanity, and wall-hung toilet.
+   - **Central Hallway**: Chevron runner connecting all rooms.
+   - **Robot Assembly Bay (New)**: Tech hex grid flooring with heavy-duty workbench, tool rack, and high-current wall charging dock.
+   - **Sun Balcony & Terrace (New)**: Teak outdoor decking, glass balustrade, and potted tropical plants.
+2. **Structural Walls & Daylight**:
+   - High-contrast architectural double-line walls with drop shadows and corner mitering.
+   - Standard 90° door-swing drafting arcs for all passageways.
+   - Window cutouts casting soft daylight beams onto the floor.
+3. **Teleportation Pads (Fusion VR Training)**:
+   - Clickable floor rings (`[Teleport to Living]`, `[Teleport to Workshop]`, `[Teleport to Kitchen]`, etc.) that smoothly reposition the avatar with an audio chime and particle ripple effect.
+4. **View Mode Switcher**:
+   - Switchable between **`📐 Blueprint Mode`** (pure crisp vector drafting) and **`🖼️ Hybrid Mode`** (blends the 3D render asset underneath).
+
+---
+
+## 4. PEAS 5-Step Learning Progression
 
 ### Step 1: Define Your Agent (Performance Measure — P)
 - **1A. Purpose Formulation**: Students formulate what the robot is for (`appState.agentPurpose`).
@@ -95,6 +123,9 @@ collabpeas-2d/
   Simulates the apartment from the robot's sensor-limited perspective (120° vision cone, sonar cross-ranges, floor moisture/dirt probes, battery HUD). Unmounted sensors display explicit blindspot warnings.
 
 ### Step 3: Give Your Robot a Body (Actuators — A)
+- **Magnetic Structure Assembly Bay** (inspired by Fusion VR Training `ActivityMagnetStructureAttachment.cs`):
+  - Visual chassis core with 8 magnetic snapping slots (Drive Wheels, Turntable Pivot, Emergency Brake, Vacuum Suction, Mop Deployer, Telescopic Arm, Gripper Claw, Docking Pin).
+  - Live progress meter: `X / 10 Required Modules (X0%)`.
 - **14 Actuators across 5 functional categories**:
   - *Locomotion*: Wheel Drive, Body Rotation, Emergency Stop.
   - *Cleaning Tools*: Vacuum Suction, Mop Pad Deploy / Retract.
@@ -114,6 +145,8 @@ collabpeas-2d/
   Active rule zones glow emerald green in real time during execution.
 
 ### Step 5: Test, Debug, and Reflect (PEAS Iteration)
+- **Interactive Control Stand Telemetry Kiosk** (inspired by Fusion VR Training `ControlStandActivityStatusUI.cs`):
+  - Live activity state, active participant role, and reset trigger.
 - **Live 10Hz Simulation Engine**:
   The robot navigates the apartment, roaming cat patrols between waypoints, dirt particles disappear when vacuumed, and wet spills clear when mopped.
 - **Real-Time Score Gauges**:
@@ -133,7 +166,7 @@ collabpeas-2d/
 
 ---
 
-## 4. Collaborative Supports (CSCW Compliance)
+## 5. Collaborative Supports (CSCW Compliance)
 
 | Support Element | Implementation in 2D Web |
 |---|---|
@@ -145,10 +178,12 @@ collabpeas-2d/
 
 ---
 
-## 5. Controls & Interaction Guide
+## 6. Controls & Interaction Guide
 
-- **Operator Locomotion**: Use **Arrow Keys** (or **W, A, S, D**) to walk the operator avatar throughout the apartment.
+- **Operator Locomotion**: Use **Arrow Keys** (or **W, A, S, D** / click-to-walk) to move the operator avatar.
+- **Teleportation**: Click on any of the glowing floor teleport pads (`🛋️ Living Room`, `🦾 Assembly Bay`, `🍳 Kitchen`, `🍽️ Dining`, `🛏️ Bedroom`, `🌿 Balcony`) to immediately travel there.
 - **Station Activation**: Walk near any of the 5 circular stations in the house and press **Spacebar** (or click on the station) to open that step.
+- **View Mode Switcher**: Click `📐 Blueprint` in the header to toggle between the crisp vector blueprint and the hybrid render overlay.
 - **Inspection Beacons**: Walk near or click the floating beacons to read environment characterizations.
 - **Quick Jump**: Use the top step-navigation bar (`1. Purpose` through `5. Test & Debug`) to jump directly to any step.
 - **Robot POV**: Click the `👁️ Robot POV` button in the header or in Step 2 to view through the robot's sensors.
@@ -157,7 +192,7 @@ collabpeas-2d/
 
 ---
 
-## 6. How to Run Locally
+## 7. How to Run Locally
 
 1. Open a terminal in the project directory:
    ```bash
@@ -165,11 +200,11 @@ collabpeas-2d/
    ```
 2. Start the local server:
    ```bash
-   node server.js 8080
+   node server.js 8088
    # or with python:
-   # python3 -m http.server 8080
+   # python3 -m http.server 8088
    ```
 3. Open your browser and navigate to:
    ```
-   http://localhost:8080
+   http://localhost:8088
    ```
