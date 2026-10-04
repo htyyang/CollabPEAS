@@ -3,32 +3,77 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CollabPEAS 2D - Collaborative AI Agent Design (PEAS Framework)</title>
+  <title>CollabPEAS 2D/3D - 360° Interactive AI Agent Design Platform (PEAS Framework)</title>
   <link rel="stylesheet" href="styles/main.css" />
   <link rel="stylesheet" href="styles/blocks.css" />
+
+  <!-- Importmap for Local Three.js and Addons -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./lib/three/three.module.js"
+    }
+  }
+  </script>
 </head>
 <body>
-  <!-- 1. Full-Screen 2D Realistic Apartment Map Layer -->
+  <!-- 1. Full-Screen Interactive Apartment Viewport Layer -->
   <div class="fullscreen-house-container" id="fullscreenHouseContainer">
-    <canvas id="houseCanvas"></canvas>
+    <!-- 2D Canvas View (with 360° rotation) -->
+    <canvas id="houseCanvas" style="display: none;"></canvas>
 
-    <!-- Floating On-Screen Navigation & Interaction Hints (Bottom Left) -->
-    <div class="map-controls-hint">
-      <span class="hint-key">🎮 Move</span> Arrow Keys / WASD
-      <span class="hint-sep">•</span>
-      <span class="hint-key">🖱️ Pan</span> Drag
+    <!-- 3D WebGL Three.js Canvas View (Apartment.glb) -->
+    <canvas id="threeCanvas"></canvas>
+
+    <!-- 3D Model Loading Overlay -->
+    <div id="glbLoadingOverlay" class="glb-loading-overlay">
+      <div class="glb-loading-box">
+        <span class="loading-icon">🏢</span>
+        <div class="loading-text">Loading 3D Apartment Model (GLB)...</div>
+        <div class="loading-progress-bar">
+          <div class="loading-progress-fill" id="glbProgressFill" style="width: 15%;"></div>
+        </div>
+        <div class="loading-sub" id="glbProgressText">Initializing 360° Interactive Environment...</div>
+      </div>
+    </div>
+
+    <!-- Interactive 360° Compass & Rotation Dial (Top Right Floating HUD) -->
+    <div class="compass-widget" id="compassWidget" title="Click or drag to rotate 360°">
+      <div class="compass-dial" id="compassDial">
+        <div class="compass-needle" id="compassNeedle">
+          <span class="needle-north">▲ N</span>
+          <span class="needle-south">▼ S</span>
+        </div>
+        <div class="compass-center-dot"></div>
+      </div>
+      <div class="compass-readout" id="compassReadout">🧭 0° N</div>
+      <div class="compass-quick-btns">
+        <button class="compass-btn" data-angle="0" title="Snap to North (0°)">N</button>
+        <button class="compass-btn" data-angle="90" title="Snap to East (90°)">E</button>
+        <button class="compass-btn" data-angle="180" title="Snap to South (180°)">S</button>
+        <button class="compass-btn" data-angle="270" title="Snap to West (270°)">W</button>
+        <button class="compass-btn" data-angle="45" title="3D Isometric (45°)">ISO</button>
+        <button class="compass-btn" id="autoSpinBtn" title="Toggle Auto 360° Orbit">🔄</button>
+      </div>
+    </div>
+
+    <!-- Floating On-Screen Navigation & 360° Interaction Hints (Bottom Left) -->
+    <div class="map-controls-hint" id="mapControlsHint">
+      <span class="hint-key">🖱️ Orbit</span> Left-Drag 360°
       <span class="hint-sep">•</span>
       <span class="hint-key">📜 Zoom</span> Wheel
       <span class="hint-sep">•</span>
-      <span class="hint-key">⚡ Fast-Travel</span> Click Blue Teleport Pads
+      <span class="hint-key">📐 Pan</span> Right-Drag
       <span class="hint-sep">•</span>
-      <span class="hint-key">🎯 Stations</span> Walk to Ring & Press [SPACE]
+      <span class="hint-key">🎮 Move</span> WASD / Arrows
+      <span class="hint-sep">•</span>
+      <span class="hint-key">🎯 Stations</span> Click 3D Ring or [SPACE]
     </div>
 
     <!-- Map View Actions (Bottom Right) -->
     <div class="map-view-actions">
-      <button class="btn-glass" id="recenterMapBtn" title="Fit & Center Entire Apartment">
-        ⛶ Fit Map
+      <button class="btn-glass" id="recenterMapBtn" title="Reset Camera to Center Apartment">
+        ⛶ Reset View
       </button>
       <button class="btn-glass btn-highlight" id="openWorkstationFabBtn" title="Open PEAS Workstation">
         📋 Workstation [SPACE]
@@ -90,8 +135,8 @@
     <div class="brand-section">
       <span class="brand-logo">🤖</span>
       <div>
-        <div class="brand-title">CollabPEAS 2D</div>
-        <div class="brand-sub">Collaborative AI Agent Specification • CSCW '26</div>
+        <div class="brand-title">CollabPEAS 3D</div>
+        <div class="brand-sub">360° AI Agent Specification • CSCW '26</div>
       </div>
     </div>
 
@@ -116,6 +161,19 @@
 
     <!-- Header Action Controls -->
     <div class="header-actions">
+      <!-- 360° View Mode Dropdown / Button Group -->
+      <div class="view-mode-group">
+        <button class="btn-mode active" id="viewMode3DBtn" title="Interactive 3D 360° Orbit (Apartment.glb)">
+          🌐 3D 360°
+        </button>
+        <button class="btn-mode" id="viewModeFpsBtn" title="First-Person 360° Walkthrough">
+          🚶 FPS 360°
+        </button>
+        <button class="btn-mode" id="viewMode2DBtn" title="2D Blueprint (360° Rotatable)">
+          📐 2D Map
+        </button>
+      </div>
+
       <!-- Player Switcher (CSCW Dyadic Collaboration) -->
       <div class="player-role-switcher" title="Switch active participant role">
         <button class="player-btn active player-a" id="playerToggleA">Player A (Lead)</button>
@@ -133,19 +191,14 @@
         </div>
       </div>
 
-      <!-- View Mode Toggle (Architectural vs Hybrid) -->
-      <button class="btn btn-sm btn-outline" id="viewModeToggleBtn" title="Switch architectural blueprint or hybrid view">
-        📐 Blueprint
-      </button>
-
       <!-- Robot POV Quick Button -->
       <button class="btn btn-sm btn-outline" id="quickPovBtn" title="View through robot sensors">
-        👁️ Robot POV
+        👁️ POV
       </button>
 
       <!-- Audio Mute Toggle -->
       <button class="btn btn-sm btn-ghost" id="muteToggleBtn" title="Toggle sound effects">
-        🔊 Audio On
+        🔊 On
       </button>
 
       <!-- Open Workstation Button -->

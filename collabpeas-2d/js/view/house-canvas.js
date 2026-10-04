@@ -29,8 +29,9 @@ export class HouseCanvasRenderer {
       w: false, s: false, a: false, d: false
     };
 
-    // Camera viewport & smooth pan/zoom
+    // Camera viewport & smooth pan/zoom & 360° heading
     this.camera = { x: 0, y: 0, scale: 0.85 };
+    this.headingAngle = 0; // 360-degree rotation angle in radians
     this.isPanning = false;
     this.panStart = { x: 0, y: 0 };
     this.animFrame = null;
@@ -92,12 +93,47 @@ export class HouseCanvasRenderer {
     this.camera.scale = newScale;
   }
 
+  setHeading(angleDegrees) {
+    this.headingAngle = (angleDegrees * Math.PI) / 180;
+    this.updateCompassHud();
+  }
+
+  updateCompassHud() {
+    const needle = document.getElementById('compassNeedle');
+    const readout = document.getElementById('compassReadout');
+    if (!needle && !readout) return;
+
+    const deg = Math.round(((this.headingAngle * 180 / Math.PI) % 360 + 360) % 360);
+    if (needle) needle.style.transform = `rotate(${-deg}deg)`;
+    if (readout) {
+      let card = 'N';
+      if (deg >= 23 && deg < 68) card = 'NE';
+      else if (deg >= 68 && deg < 113) card = 'E';
+      else if (deg >= 113 && deg < 158) card = 'SE';
+      else if (deg >= 158 && deg < 203) card = 'S';
+      else if (deg >= 203 && deg < 248) card = 'SW';
+      else if (deg >= 248 && deg < 293) card = 'W';
+      else if (deg >= 293 && deg < 338) card = 'NW';
+      readout.innerText = `🧭 ${deg}° ${card}`;
+    }
+  }
+
   initControls() {
     window.addEventListener('keydown', (e) => {
       // Don't intercept keys if focused on text input or if modal is open
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
       const modal = document.getElementById('stepModalOverlay');
       if (modal && modal.style.display !== 'none') return;
+
+      // 360° Rotation Keys Q / E
+      if (e.key === 'q' || e.key === 'Q') {
+        this.headingAngle -= 0.08;
+        this.updateCompassHud();
+      }
+      if (e.key === 'e' || e.key === 'E') {
+        this.headingAngle += 0.08;
+        this.updateCompassHud();
+      }
 
       if (this.keys.hasOwnProperty(e.key)) {
         this.keys[e.key] = true;
@@ -210,9 +246,19 @@ export class HouseCanvasRenderer {
 
   screenToWorld(clientX, clientY) {
     const rect = this.canvas.getBoundingClientRect();
+    const w = this.cssWidth || 1000;
+    const h = this.cssHeight || 700;
+
+    const mx = clientX - rect.left - w / 2;
+    const my = clientY - rect.top - h / 2;
+    const cos = Math.cos(-this.headingAngle);
+    const sin = Math.sin(-this.headingAngle);
+    const rx = mx * cos - my * sin + w / 2;
+    const ry = mx * sin + my * cos + h / 2;
+
     return {
-      x: (clientX - rect.left - this.camera.x) / this.camera.scale,
-      y: (clientY - rect.top - this.camera.y) / this.camera.scale
+      x: (rx - this.camera.x) / this.camera.scale,
+      y: (ry - this.camera.y) / this.camera.scale
     };
   }
 
@@ -253,6 +299,17 @@ export class HouseCanvasRenderer {
     if (dx !== 0 || dy !== 0) {
       avatar.targetX = null;
       avatar.targetY = null;
+
+      // Rotate movement vector by current camera heading so W/Up always moves camera-forward
+      if (this.headingAngle) {
+        const cos = Math.cos(this.headingAngle);
+        const sin = Math.sin(this.headingAngle);
+        const rdx = dx * cos - dy * sin;
+        const rdy = dx * sin + dy * cos;
+        dx = rdx;
+        dy = rdy;
+      }
+
       const len = Math.hypot(dx, dy);
       dx = (dx / len) * avatar.speed;
       dy = (dy / len) * avatar.speed;
@@ -319,6 +376,11 @@ export class HouseCanvasRenderer {
     ctx.clearRect(0, 0, w, h);
 
     ctx.save();
+    if (this.headingAngle) {
+      ctx.translate(w / 2, h / 2);
+      ctx.rotate(this.headingAngle);
+      ctx.translate(-w / 2, -h / 2);
+    }
     ctx.translate(this.camera.x, this.camera.y);
     ctx.scale(this.camera.scale, this.camera.scale);
 

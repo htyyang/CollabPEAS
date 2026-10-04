@@ -1,14 +1,15 @@
 /**
- * CollabPEAS - Main Application Coordinator
- * Boots all subsystems, binds top navigation bar, controls player role switching,
- * manages full-screen realistic apartment map with popup step workstations,
- * and coordinates 10Hz simulation engine, dual observation logging, and PEAS scoring.
+ * CollabPEAS - Main Application Coordinator (v0.3)
+ * Integrates 3D 360-Degree WebGL Engine (Apartment.glb), 360° OrbitControls & FPS Walkthrough,
+ * 2D 360-degree Rotatable Blueprint Canvas, Interactive 360° Compass Widget,
+ * Fullscreen Map Layer with Step Popup Workstations, 10Hz Simulation Engine, and Dual Logging.
  */
 
 import { appState } from './state.js';
 import { ApartmentWorld } from './sim/world.js';
 import { SimulationEngine } from './sim/engine.js';
 import { HouseCanvasRenderer } from './view/house-canvas.js';
+import { Apartment3DMap } from './view/map-3d.js';
 import { RobotPovRenderer } from './view/pov-renderer.js';
 import { BlockCanvasView } from './view/block-canvas.js';
 import { DualObservationLogger } from './logging/dual-log.js';
@@ -20,16 +21,26 @@ window.addEventListener('DOMContentLoaded', () => {
   // 1. Initialize World Model
   const world = new ApartmentWorld();
 
-  // 2. Initialize Full-Screen Realistic Apartment Canvas
+  // 2. Initialize 2D Interactive House Canvas (Rotatable 360°)
   const canvasEl = document.getElementById('houseCanvas');
   const houseCanvas = new HouseCanvasRenderer(canvasEl, world);
   window.houseCanvas = houseCanvas;
 
-  // 3. Initialize 10Hz Simulation Engine
+  // 3. Initialize 3D 360° WebGL Three.js Engine (Apartment.glb)
+  const threeCanvasEl = document.getElementById('threeCanvas');
+  let map3d = null;
+  try {
+    map3d = new Apartment3DMap(threeCanvasEl, world);
+    window.map3d = map3d;
+  } catch (err) {
+    console.warn('⚠️ WebGL 3D Map failed to initialize, falling back to 360° 2D Canvas:', err);
+  }
+
+  // 4. Initialize 10Hz Simulation Engine
   const simEngine = new SimulationEngine(world);
   window.simEngine = simEngine;
 
-  // 4. Initialize Subview Components
+  // 5. Initialize Subview Components
   const blockCanvasContainer = document.getElementById('blockCanvasMount');
   const blockCanvasView = new BlockCanvasView(blockCanvasContainer);
 
@@ -41,11 +52,165 @@ window.addEventListener('DOMContentLoaded', () => {
   const povModalEl = document.getElementById('robotPovModal');
   const povRenderer = new RobotPovRenderer(povModalEl, world);
 
-  // 5. Connect Tick Event to POV Renderer
+  // 6. Connect Tick Event to POV Renderer
   appState.on('tick', ({ percepts }) => {
     if (appState.isRobotPovActive && povModalEl.style.display !== 'none') {
       povRenderer.render(percepts);
     }
+  });
+
+  // -------------------------------------------------------------
+  // 360-DEGREE VIEW MODE SWITCHER (3D 360° / FPS 360° / 2D Map)
+  // -------------------------------------------------------------
+  const viewMode3DBtn = document.getElementById('viewMode3DBtn');
+  const viewModeFpsBtn = document.getElementById('viewModeFpsBtn');
+  const viewMode2DBtn = document.getElementById('viewMode2DBtn');
+  const mapControlsHint = document.getElementById('mapControlsHint');
+
+  let currentViewMode = '3d'; // '3d' | 'fps' | '2d'
+
+  function switchViewMode(mode) {
+    currentViewMode = mode;
+    [viewMode3DBtn, viewModeFpsBtn, viewMode2DBtn].forEach(b => b?.classList.remove('active'));
+
+    if (mode === '3d') {
+      viewMode3DBtn?.classList.add('active');
+      if (threeCanvasEl) threeCanvasEl.style.display = 'block';
+      if (canvasEl) canvasEl.style.display = 'none';
+      if (map3d) {
+        map3d.setViewMode('orbit');
+        map3d.onResize();
+      }
+      if (mapControlsHint) {
+        mapControlsHint.innerHTML = `
+          <span class="hint-key">🖱️ Orbit</span> Left-Drag 360°
+          <span class="hint-sep">•</span>
+          <span class="hint-key">📜 Zoom</span> Wheel
+          <span class="hint-sep">•</span>
+          <span class="hint-key">📐 Pan</span> Right-Drag
+          <span class="hint-sep">•</span>
+          <span class="hint-key">🎮 Move</span> WASD / Arrows
+          <span class="hint-sep">•</span>
+          <span class="hint-key">🎯 Stations</span> Click 3D Ring
+        `;
+      }
+    } else if (mode === 'fps') {
+      viewModeFpsBtn?.classList.add('active');
+      if (threeCanvasEl) threeCanvasEl.style.display = 'block';
+      if (canvasEl) canvasEl.style.display = 'none';
+      if (map3d) {
+        map3d.setViewMode('fps');
+        map3d.onResize();
+      }
+      if (mapControlsHint) {
+        mapControlsHint.innerHTML = `
+          <span class="hint-key">🚶 Walk</span> WASD / Arrows
+          <span class="hint-sep">•</span>
+          <span class="hint-key">👁️ Look 360°</span> Drag Mouse
+          <span class="hint-sep">•</span>
+          <span class="hint-key">🎯 Stations</span> Walk to Ring & [SPACE]
+        `;
+      }
+    } else if (mode === '2d') {
+      viewMode2DBtn?.classList.add('active');
+      if (threeCanvasEl) threeCanvasEl.style.display = 'none';
+      if (canvasEl) canvasEl.style.display = 'block';
+      houseCanvas.resizeCanvas();
+      houseCanvas.fitView();
+      if (mapControlsHint) {
+        mapControlsHint.innerHTML = `
+          <span class="hint-key">🎮 Move</span> WASD / Arrows
+          <span class="hint-sep">•</span>
+          <span class="hint-key">🖱️ Pan</span> Drag
+          <span class="hint-sep">•</span>
+          <span class="hint-key">📜 Zoom</span> Wheel
+          <span class="hint-sep">•</span>
+          <span class="hint-key">🧭 360°</span> Q / E Keys
+          <span class="hint-sep">•</span>
+          <span class="hint-key">🎯 Stations</span> [SPACE]
+        `;
+      }
+    }
+  }
+
+  viewMode3DBtn?.addEventListener('click', () => { switchViewMode('3d'); sound.playClick(); });
+  viewModeFpsBtn?.addEventListener('click', () => { switchViewMode('fps'); sound.playClick(); });
+  viewMode2DBtn?.addEventListener('click', () => { switchViewMode('2d'); sound.playClick(); });
+
+  // -------------------------------------------------------------
+  // INTERACTIVE 360-DEGREE COMPASS WIDGET
+  // -------------------------------------------------------------
+  document.querySelectorAll('.compass-btn[data-angle]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const angle = parseInt(btn.getAttribute('data-angle'), 10);
+      if (currentViewMode === '2d') {
+        houseCanvas.setHeading(angle);
+      } else if (map3d) {
+        map3d.setHeading(angle);
+      }
+      sound.playSnap();
+    });
+  });
+
+  const autoSpinBtn = document.getElementById('autoSpinBtn');
+  autoSpinBtn?.addEventListener('click', () => {
+    if (map3d) {
+      const isSpinning = map3d.toggleAutoSpin();
+      if (isSpinning) {
+        autoSpinBtn.classList.add('active');
+      } else {
+        autoSpinBtn.classList.remove('active');
+      }
+      sound.playClick();
+    }
+  });
+
+  // Compass Dial Dragging to Spin 360°
+  const compassDial = document.getElementById('compassDial');
+  let isDialDragging = false;
+
+  const handleDialRotation = (e) => {
+    if (!compassDial) return;
+    const rect = compassDial.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dx = e.clientX - cx;
+    const dy = e.clientY - cy;
+    const rad = Math.atan2(dx, -dy);
+    const deg = Math.round(((rad * 180 / Math.PI) % 360 + 360) % 360);
+
+    if (currentViewMode === '2d') {
+      houseCanvas.setHeading(deg);
+    } else if (map3d) {
+      map3d.setHeading(deg);
+    }
+  };
+
+  compassDial?.addEventListener('mousedown', (e) => {
+    isDialDragging = true;
+    handleDialRotation(e);
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (isDialDragging) {
+      handleDialRotation(e);
+    }
+  });
+
+  window.addEventListener('mouseup', () => {
+    isDialDragging = false;
+  });
+
+  // Recenter Map Button
+  const recenterMapBtn = document.getElementById('recenterMapBtn');
+  recenterMapBtn?.addEventListener('click', () => {
+    if (currentViewMode === '2d') {
+      houseCanvas.setHeading(0);
+      houseCanvas.fitView();
+    } else if (map3d) {
+      map3d.setViewMode('orbit');
+    }
+    sound.playClick();
   });
 
   // -------------------------------------------------------------
@@ -59,7 +224,6 @@ window.addEventListener('DOMContentLoaded', () => {
   const topNavItems = document.querySelectorAll('.step-nav-item');
   const openWorkstationBtn = document.getElementById('openWorkstationBtn');
   const openWorkstationFabBtn = document.getElementById('openWorkstationFabBtn');
-  const recenterMapBtn = document.getElementById('recenterMapBtn');
 
   const STEP_METADATA = {
     1: { badge: 'STEP 1 OF 5 • PEAS: P', heading: '🎯 Purpose & Performance Measures (P)' },
@@ -70,33 +234,23 @@ window.addEventListener('DOMContentLoaded', () => {
   };
 
   function updateStepUi(step) {
-    // 1. Update Top Header Nav Pills
     topNavItems.forEach(item => {
       const s = parseInt(item.getAttribute('data-step'), 10);
-      if (s === step) {
-        item.classList.add('active');
-      } else {
-        item.classList.remove('active');
-      }
+      if (s === step) item.classList.add('active');
+      else item.classList.remove('active');
     });
 
-    // 2. Update Modal Header Tabs
     modalTabs.forEach(tab => {
       const s = parseInt(tab.getAttribute('data-step'), 10);
-      if (s === step) {
-        tab.classList.add('active');
-      } else {
-        tab.classList.remove('active');
-      }
+      if (s === step) tab.classList.add('active');
+      else tab.classList.remove('active');
     });
 
-    // 3. Update Modal Heading & Badge
     if (STEP_METADATA[step]) {
       if (modalBadge) modalBadge.innerText = STEP_METADATA[step].badge;
       if (modalHeading) modalHeading.innerText = STEP_METADATA[step].heading;
     }
 
-    // 4. Toggle visibility between 4-slot code canvas and step panel
     if (step === 4) {
       if (blockCanvasContainer) blockCanvasContainer.style.display = 'block';
       if (stepsPanelEl) stepsPanelEl.style.display = 'none';
@@ -129,17 +283,14 @@ window.addEventListener('DOMContentLoaded', () => {
   window.openStepModal = openStepModal;
   window.closeStepModal = closeStepModal;
 
-  // Close modal button
   modalCloseBtn?.addEventListener('click', closeStepModal);
 
-  // Click on background overlay to close
   modalOverlay?.addEventListener('click', (e) => {
     if (e.target === modalOverlay) {
       closeStepModal();
     }
   });
 
-  // Top header step buttons open modal directly to that step
   topNavItems.forEach(item => {
     item.addEventListener('click', () => {
       const step = parseInt(item.getAttribute('data-step'), 10);
@@ -147,7 +298,6 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Tabs inside modal dialog
   modalTabs.forEach(tab => {
     tab.addEventListener('click', () => {
       const step = parseInt(tab.getAttribute('data-step'), 10);
@@ -156,19 +306,11 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Open Workstation Buttons
   openWorkstationBtn?.addEventListener('click', () => openStepModal(appState.currentStep));
   openWorkstationFabBtn?.addEventListener('click', () => openStepModal(appState.currentStep));
 
-  // Recenter map button
-  recenterMapBtn?.addEventListener('click', () => {
-    houseCanvas.fitView();
-    sound.playClick();
-  });
-
   // Global Keyboard Shortcuts
   window.addEventListener('keydown', (e) => {
-    // If modal is open, Escape closes it
     if (modalOverlay && modalOverlay.style.display !== 'none') {
       if (e.key === 'Escape') {
         closeStepModal();
@@ -177,7 +319,6 @@ window.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Space opens modal or station
     if (e.key === ' ' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
       if (houseCanvas.activeStationPrompt) {
         openStepModal(houseCanvas.activeStationPrompt.step);
@@ -188,7 +329,6 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Listen to step changes
   appState.on('stepChanged', ({ step }) => {
     updateStepUi(step);
   });
@@ -225,20 +365,13 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 
   // -------------------------------------------------------------
-  // AUDIO & VIEW CONTROLS
+  // AUDIO & POV CONTROLS
   // -------------------------------------------------------------
   const muteBtn = document.getElementById('muteToggleBtn');
   muteBtn?.addEventListener('click', () => {
     const isMuted = sound.toggleMute();
-    muteBtn.innerText = isMuted ? '🔇 Audio Off' : '🔊 Audio On';
+    muteBtn.innerText = isMuted ? '🔇 Off' : '🔊 On';
     if (!isMuted) sound.playClick();
-  });
-
-  const viewModeBtn = document.getElementById('viewModeToggleBtn');
-  viewModeBtn?.addEventListener('click', () => {
-    const mode = houseCanvas.toggleViewMode();
-    viewModeBtn.innerText = mode === 'architectural' ? '📐 Blueprint' : '🖼️ Hybrid';
-    sound.playClick();
   });
 
   const quickPovBtn = document.getElementById('quickPovBtn');
@@ -278,7 +411,6 @@ window.addEventListener('DOMContentLoaded', () => {
   const hudOpenLabBtn = document.getElementById('hudOpenLabBtn');
   const hudSpeedBtns = document.querySelectorAll('.hud-speed-btn');
 
-  // Play/Pause
   hudPlayPauseBtn?.addEventListener('click', () => {
     if (appState.simRunning) {
       simEngine.stop();
@@ -296,7 +428,6 @@ window.addEventListener('DOMContentLoaded', () => {
     sound.playClick();
   });
 
-  // Reset
   hudResetBtn?.addEventListener('click', () => {
     simEngine.reset();
     simEngine.start();
@@ -307,7 +438,6 @@ window.addEventListener('DOMContentLoaded', () => {
     sound.playClick();
   });
 
-  // Speed Multiplier
   hudSpeedBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       const spd = parseInt(btn.getAttribute('data-speed'), 10);
@@ -318,13 +448,12 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Quick Observation Stamps
   document.getElementById('hudStampPass')?.addEventListener('click', () => {
-    appState.addObservation('✓', 'Observed in full-screen map');
+    appState.addObservation('✓', 'Observed in full-screen 360° map');
     sound.playSnap();
   });
   document.getElementById('hudStampFail')?.addEventListener('click', () => {
-    appState.addObservation('✗', 'Observed mismatch in full-screen map');
+    appState.addObservation('✗', 'Observed mismatch in full-screen 360° map');
     sound.playSnap();
   });
   document.getElementById('hudStampQuery')?.addEventListener('click', () => {
@@ -332,12 +461,10 @@ window.addEventListener('DOMContentLoaded', () => {
     sound.playSnap();
   });
 
-  // Open Step 5 Lab Button
   hudOpenLabBtn?.addEventListener('click', () => {
     openStepModal(5);
   });
 
-  // Update HUD metrics on simulation tick
   appState.on('tick', ({ tick, scores }) => {
     if (hudTickText) hudTickText.innerText = `Tick ${tick}`;
     if (hudPeasScore) hudPeasScore.innerText = scores.composite.toFixed(1);
@@ -353,8 +480,11 @@ window.addEventListener('DOMContentLoaded', () => {
   updateStepUi(appState.currentStep);
   updatePlayerUi(appState.activePlayerId);
 
+  // Default to 3D 360° Orbit view
+  switchViewMode('3d');
+
   // Automatically start background simulation at 1x so environment is alive
   simEngine.start();
 
-  console.log('🚀 CollabPEAS 2D Web Application Initialized with Fullscreen Map & Modal Workstations.');
+  console.log('🚀 CollabPEAS 3D (v0.3) Initialized with 360° Interactive WebGL Engine & Rotatable Map.');
 });
