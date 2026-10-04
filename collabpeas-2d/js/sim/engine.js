@@ -24,6 +24,8 @@ export class SimulationEngine {
     this.catSafetyViolations = 0;
     this.humanSafetyViolations = 0;
     this.vacuumLiquidMistakes = 0;
+    this.bypassTicks = 0;
+    this.bypassTurn = Math.PI / 3;
   }
 
   start() {
@@ -59,6 +61,7 @@ export class SimulationEngine {
     this.catSafetyViolations = 0;
     this.humanSafetyViolations = 0;
     this.vacuumLiquidMistakes = 0;
+    this.bypassTicks = 0;
     this.scores = { coverage: 0, safety: 100, time: 100, hazard: 100, composite: 80 };
     appState.notify('simReset', {});
   }
@@ -274,6 +277,12 @@ export class SimulationEngine {
       // Check if required SENSE is actually installed on the robot
       if (!appState.installedSensors.has(sense)) continue;
 
+      // In single task focus mode, only run rules matching active task OR global safety/emergency rules
+      const isSafety = control === 'CTRL_05' || action === 'ACT_06' || action === 'ACT_07' || sense === 'SENSE_01' || sense === 'SENSE_04';
+      if (appState.activeTaskFocus && appState.activeTaskFocus !== 'ALL' && rule.taskId !== appState.activeTaskFocus && !isSafety) {
+        continue;
+      }
+
       // Evaluate condition against percepts
       let condPassed = false;
 
@@ -296,7 +305,7 @@ export class SimulationEngine {
       if (condPassed) {
         let priority = control === 'CTRL_05' ? 10 : 1;
         // Priority boost when this rule matches the user's active selected task
-        if (appState.activeTaskFocus && appState.activeTaskFocus !== 'ALL' && rule.taskId === appState.activeTaskFocus) {
+        if (rule.taskId === appState.activeTaskFocus) {
           priority += 15;
         }
         triggeredRules.push({
@@ -309,27 +318,53 @@ export class SimulationEngine {
       }
     }
 
+    const robot = this.world.robot;
+
+    // Smart obstacle avoidance in front (multi-ray clearance probing)
+    const frontDist = this.raycastObstacle(robot.x, robot.y, robot.heading);
+    if (frontDist < 38) {
+      this.bypassTicks = 12; // bypass along clearer vector for 1.2 seconds
+      const leftDist = this.raycastObstacle(robot.x, robot.y, robot.heading - Math.PI / 3);
+      const rightDist = this.raycastObstacle(robot.x, robot.y, robot.heading + Math.PI / 3);
+      this.bypassTurn = rightDist >= leftDist ? Math.PI / 3 : -Math.PI / 3;
+      robot.heading += this.bypassTurn;
+      return {
+        action: 'ACT_01',
+        priority: 25,
+        trace: { sense: 'SENSE_04', condition: 'COND_01', action: 'ACT_01', control: 'CTRL_05' }
+      };
+    }
+
+    if (this.bypassTicks > 0) {
+      this.bypassTicks--;
+      return { action: 'ACT_01', priority: 0, trace: null };
+    }
+
     if (triggeredRules.length === 0) {
-      // Task-targeted autonomous navigation
-      const robot = this.world.robot;
-      const frontDist = this.raycastObstacle(robot.x, robot.y, robot.heading);
-
-      if (frontDist < 45) {
-        return { action: 'ACT_04', priority: 0, trace: null }; // turn right to avoid obstacle
-      }
-
-      // Check if there is an active task objective to seek
+      // Autopilot navigation toward nearest active target
       let target = null;
       if (appState.activeTaskFocus === 'TASK_1') {
-        target = this.world.dirtCells.find(c => !c.cleaned);
+        const remaining = this.world.dirtCells.filter(c => !c.cleaned);
+        if (remaining.length > 0) {
+          remaining.sort((a, b) => Math.hypot(robot.x - a.x, robot.y - a.y) - Math.hypot(robot.x - b.x, robot.y - b.y));
+          target = remaining[0];
+        }
       } else if (appState.activeTaskFocus === 'TASK_2') {
         if (robot.heldObject) {
           target = robot.heldObject.type === 'TRASH' ? this.world.smartBin : this.world.depositTable;
         } else {
-          target = this.world.objects.find(o => !o.carried && !o.disposed);
+          const remaining = this.world.objects.filter(o => !o.carried && !o.disposed);
+          if (remaining.length > 0) {
+            remaining.sort((a, b) => Math.hypot(robot.x - a.x, robot.y - a.y) - Math.hypot(robot.x - b.x, robot.y - b.y));
+            target = remaining[0];
+          }
         }
       } else if (appState.activeTaskFocus === 'TASK_3') {
-        target = this.world.wetCells.find(w => !w.cleaned);
+        const remaining = this.world.wetCells.filter(w => !w.cleaned);
+        if (remaining.length > 0) {
+          remaining.sort((a, b) => Math.hypot(robot.x - a.x, robot.y - a.y) - Math.hypot(robot.x - b.x, robot.y - b.y));
+          target = remaining[0];
+        }
       } else if (appState.activeTaskFocus === 'TASK_6') {
         target = this.world.dock;
       }
@@ -342,8 +377,8 @@ export class SimulationEngine {
         while (diff > Math.PI) diff -= 2 * Math.PI;
         while (diff < -Math.PI) diff += 2 * Math.PI;
 
-        if (Math.abs(diff) > 0.35) {
-          return { action: diff > 0 ? 'ACT_04' : 'ACT_03', priority: 0, trace: null };
+        if (Math.abs(diff) > 0.06) {
+          robot.heading += Math.sign(diff) * Math.min(Math.abs(diff), 0.22);
         }
       }
 
@@ -360,35 +395,32 @@ export class SimulationEngine {
   executeAction(decision) {
     const robot = this.world.robot;
     const act = decision.action;
+    let shouldDriveForward = false;
 
     switch (act) {
       case 'ACT_01': // MOVE FORWARD
         robot.isStopped = false;
-        const currentSpeed = robot.isSlow ? 0.9 : robot.speed;
-        const dx = Math.cos(robot.heading) * currentSpeed;
-        const dy = Math.sin(robot.heading) * currentSpeed;
-        const res = this.world.resolveMove(robot.x, robot.y, dx, dy, robot.radius);
-        if (res.moved) {
-          robot.x = res.x;
-          robot.y = res.y;
-        } else {
-          // Slide or turn when hitting obstacle
-          robot.heading += Math.PI / 4;
-        }
+        shouldDriveForward = true;
         break;
 
       case 'ACT_02': // MOVE BACKWARD
         robot.isStopped = false;
-        robot.x -= Math.cos(robot.heading) * (robot.speed * 0.6);
-        robot.y -= Math.sin(robot.heading) * (robot.speed * 0.6);
+        const currentRevSpeed = robot.isSlow ? 0.6 : robot.speed * 0.6;
+        const bdx = -Math.cos(robot.heading) * currentRevSpeed;
+        const bdy = -Math.sin(robot.heading) * currentRevSpeed;
+        const bres = this.world.resolveMove(robot.x, robot.y, bdx, bdy, robot.radius);
+        if (bres.moved) {
+          robot.x = bres.x;
+          robot.y = bres.y;
+        }
         break;
 
-      case 'ACT_03': // ROTATE LEFT 90
-        robot.heading -= Math.PI / 2;
+      case 'ACT_03': // ROTATE LEFT
+        robot.heading -= Math.PI / 4;
         break;
 
-      case 'ACT_04': // ROTATE RIGHT 90
-        robot.heading += Math.PI / 2;
+      case 'ACT_04': // ROTATE RIGHT
+        robot.heading += Math.PI / 4;
         break;
 
       case 'ACT_05': // ROTATE 180
@@ -403,17 +435,22 @@ export class SimulationEngine {
 
       case 'ACT_07': // SET SPEED: SLOW
         robot.isSlow = true;
+        robot.isStopped = false;
         robot.ledColor = 'rgba(245, 158, 11, 0.85)'; // amber
+        shouldDriveForward = true;
         break;
 
       case 'ACT_08': // SET SPEED: NORMAL
         robot.isSlow = false;
+        robot.isStopped = false;
         robot.ledColor = 'rgba(59, 130, 246, 0.8)'; // blue
+        shouldDriveForward = true;
         break;
 
       case 'ACT_09': // VACUUM ON
         robot.vacuumActive = true;
         robot.mopDeployed = false;
+        robot.isStopped = false;
         robot.ledColor = 'rgba(234, 179, 8, 0.9)'; // yellow
         // Check if erroneously vacuuming on liquid! (Learning moment)
         const onWet = this.world.wetCells.some(w => !w.cleaned && Math.hypot(robot.x - w.x, robot.y - w.y) < w.radius + 10);
@@ -430,15 +467,18 @@ export class SimulationEngine {
             }
           });
         }
+        shouldDriveForward = true;
         break;
 
       case 'ACT_10': // VACUUM OFF
         robot.vacuumActive = false;
+        shouldDriveForward = true;
         break;
 
       case 'ACT_11': // MOP DEPLOY
         robot.mopDeployed = true;
         robot.vacuumActive = false;
+        robot.isStopped = false;
         robot.ledColor = 'rgba(56, 189, 248, 0.9)'; // cyan/blue
         // Clean wet cells
         this.world.wetCells.forEach(w => {
@@ -447,14 +487,18 @@ export class SimulationEngine {
             sound.playSnap();
           }
         });
+        shouldDriveForward = true;
         break;
 
       case 'ACT_12': // MOP RETRACT
         robot.mopDeployed = false;
+        shouldDriveForward = true;
         break;
 
       case 'ACT_13': // ARM EXTEND
         robot.armExtended = true;
+        robot.isStopped = false;
+        shouldDriveForward = true;
         break;
 
       case 'ACT_14': // GRIPPER CLOSE
@@ -468,6 +512,7 @@ export class SimulationEngine {
             sound.playSnap();
           }
         }
+        shouldDriveForward = true;
         break;
 
       case 'ACT_15': // GRIPPER OPEN
@@ -488,10 +533,12 @@ export class SimulationEngine {
           obj.carried = false;
           robot.heldObject = null;
         }
+        shouldDriveForward = true;
         break;
 
       case 'ACT_16': // ARM RETRACT
         robot.armExtended = false;
+        shouldDriveForward = true;
         break;
 
       case 'ACT_17': // DOCK CONNECTOR ENGAGE
@@ -501,28 +548,58 @@ export class SimulationEngine {
           robot.isCharging = true;
           robot.battery = Math.min(100, robot.battery + 2.5);
           sound.playChime();
+        } else {
+          shouldDriveForward = true;
         }
         break;
 
       case 'ACT_18': // LED RED
         robot.ledColor = 'rgba(239, 68, 68, 0.95)';
+        shouldDriveForward = true;
         break;
 
       case 'ACT_19': // LED AMBER
         robot.ledColor = 'rgba(245, 158, 11, 0.95)';
+        shouldDriveForward = true;
         break;
 
       case 'ACT_20': // LED BLUE
         robot.ledColor = 'rgba(59, 130, 246, 0.95)';
+        shouldDriveForward = true;
         break;
 
       case 'ACT_22': // SOUND BEEP
         sound.playBeep();
+        shouldDriveForward = true;
         break;
 
       case 'ACT_23': // SOUND CHIME
         sound.playChime();
+        shouldDriveForward = true;
         break;
+
+      default:
+        shouldDriveForward = true;
+        break;
+    }
+
+    // Physical forward locomotion with collision avoidance
+    if (shouldDriveForward && !robot.isStopped && !robot.isDocked) {
+      const frontDist = this.raycastObstacle(robot.x, robot.y, robot.heading);
+      if (frontDist < 30) {
+        robot.heading += Math.PI / 4;
+      } else {
+        const currentSpeed = robot.isSlow ? 1.0 : robot.speed;
+        const dx = Math.cos(robot.heading) * currentSpeed;
+        const dy = Math.sin(robot.heading) * currentSpeed;
+        const res = this.world.resolveMove(robot.x, robot.y, dx, dy, robot.radius);
+        if (res.moved) {
+          robot.x = res.x;
+          robot.y = res.y;
+        } else {
+          robot.heading += Math.PI / 4;
+        }
+      }
     }
   }
 
