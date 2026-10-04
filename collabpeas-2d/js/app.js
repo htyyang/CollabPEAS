@@ -68,9 +68,11 @@ window.addEventListener('DOMContentLoaded', () => {
   const mapControlsHint = document.getElementById('mapControlsHint');
 
   let currentViewMode = '3d'; // '3d' | 'fps' | '2d'
+  window.currentViewMode = '3d';
 
   function switchViewMode(mode) {
     currentViewMode = mode;
+    window.currentViewMode = mode;
     [viewMode3DBtn, viewModeFpsBtn, viewMode2DBtn].forEach(b => b?.classList.remove('active'));
 
     if (mode === '3d') {
@@ -138,6 +140,49 @@ window.addEventListener('DOMContentLoaded', () => {
   viewMode3DBtn?.addEventListener('click', () => { switchViewMode('3d'); sound.playClick(); });
   viewModeFpsBtn?.addEventListener('click', () => { switchViewMode('fps'); sound.playClick(); });
   viewMode2DBtn?.addEventListener('click', () => { switchViewMode('2d'); sound.playClick(); });
+
+  // -------------------------------------------------------------
+  // ACTIVE TASK / MISSION SELECTOR WIRING
+  // -------------------------------------------------------------
+  const headerTaskSelect = document.getElementById('headerTaskSelect');
+  const hudTaskBadge = document.getElementById('hudTaskBadge');
+  const hudTaskIcon = document.getElementById('hudTaskIcon');
+  const hudTaskName = document.getElementById('hudTaskName');
+
+  const TASK_NAME_MAP = {
+    'ALL': { icon: '🤖', name: 'All 6 Tasks (Multi-Task)' },
+    'TASK_1': { icon: '🧹', name: 'Task 1: Vacuum Floor' },
+    'TASK_2': { icon: '📦', name: 'Task 2: Sort Objects' },
+    'TASK_3': { icon: '💧', name: 'Task 3: Clean Spills' },
+    'TASK_4': { icon: '🐱', name: 'Task 4: Avoid Cat' },
+    'TASK_5': { icon: '🚶', name: 'Task 5: Slow Near Humans' },
+    'TASK_6': { icon: '⚡', name: 'Task 6: Return to Dock' }
+  };
+
+  headerTaskSelect?.addEventListener('change', (e) => {
+    appState.setActiveTask(e.target.value);
+    sound.playSnap();
+  });
+
+  hudTaskBadge?.addEventListener('click', () => {
+    const tasks = ['ALL', 'TASK_1', 'TASK_2', 'TASK_3', 'TASK_4', 'TASK_5', 'TASK_6'];
+    const currentIdx = tasks.indexOf(appState.activeTaskFocus);
+    const nextTask = tasks[(currentIdx + 1) % tasks.length];
+    appState.setActiveTask(nextTask);
+    sound.playSnap();
+  });
+
+  appState.on('taskChanged', ({ taskId }) => {
+    if (headerTaskSelect) headerTaskSelect.value = taskId;
+    const info = TASK_NAME_MAP[taskId] || { icon: '🎯', name: taskId };
+    if (hudTaskIcon) hudTaskIcon.innerText = info.icon;
+    if (hudTaskName) hudTaskName.innerText = info.name;
+
+    // Refresh active step view if open
+    if (appState.currentStep === 1) stepsView.renderStep1();
+    else if (appState.currentStep === 2) stepsView.renderStep2();
+    else if (appState.currentStep === 3) stepsView.renderStep3();
+  });
 
   // -------------------------------------------------------------
   // INTERACTIVE 360-DEGREE COMPASS WIDGET

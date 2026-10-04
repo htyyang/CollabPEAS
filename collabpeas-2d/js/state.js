@@ -100,6 +100,57 @@ class StateManager {
     this.notify('playerChanged', { playerId });
   }
 
+  setActiveTask(taskId) {
+    if (!taskId) return;
+    this.activeTaskFocus = taskId;
+
+    if (taskId === 'TASK_1') {
+      this.agentPurpose = 'Autonomous Floor Vacuuming & Dirt Cell Clearance';
+      this.weights.Coverage = 60;
+      this.weights.Safety = 20;
+      this.weights.Time = 10;
+      this.weights.Hazard = 10;
+    } else if (taskId === 'TASK_2') {
+      this.agentPurpose = 'Object Sorting: Identify & Deposit Trash in Bin, Cups on Table';
+      this.weights.Coverage = 50;
+      this.weights.Safety = 25;
+      this.weights.Time = 15;
+      this.weights.Hazard = 10;
+    } else if (taskId === 'TASK_3') {
+      this.agentPurpose = 'Hazard Response: Detect & Mop Liquid Spills Safely';
+      this.weights.Hazard = 60;
+      this.weights.Safety = 20;
+      this.weights.Coverage = 10;
+      this.weights.Time = 10;
+    } else if (taskId === 'TASK_4') {
+      this.agentPurpose = 'Pet Safety: Detect Roaming Cat & Execute Instant Emergency Stop';
+      this.weights.Safety = 70;
+      this.weights.Time = 10;
+      this.weights.Coverage = 10;
+      this.weights.Hazard = 10;
+    } else if (taskId === 'TASK_5') {
+      this.agentPurpose = 'Human-Robot Interaction: Slow Down Near Participant Avatars';
+      this.weights.Safety = 65;
+      this.weights.Time = 15;
+      this.weights.Coverage = 10;
+      this.weights.Hazard = 10;
+    } else if (taskId === 'TASK_6') {
+      this.agentPurpose = 'Autonomous Docking: Return to Charging Pin on Low Battery (<30%)';
+      this.weights.Time = 50;
+      this.weights.Safety = 25;
+      this.weights.Coverage = 15;
+      this.weights.Hazard = 10;
+    } else if (taskId === 'ALL') {
+      this.agentPurpose = 'Autonomous Household Cleaning & Hazard-Avoidance Assistant';
+      this.weights.Coverage = 35;
+      this.weights.Safety = 25;
+      this.weights.Time = 20;
+      this.weights.Hazard = 20;
+    }
+
+    this.notify('taskChanged', { taskId, purpose: this.agentPurpose, weights: { ...this.weights } });
+  }
+
   setWeight(dimension, value) {
     if (this.weights[dimension] !== undefined) {
       this.weights[dimension] = Math.max(0, Math.min(100, Math.round(value)));

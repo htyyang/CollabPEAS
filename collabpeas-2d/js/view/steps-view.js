@@ -87,25 +87,38 @@ export class StepsView {
         <!-- 1B. The Six Household Tasks -->
         <div class="card-section">
           <div class="section-title-row">
-            <h3>1B. Six Household Tasks Catalog</h3>
-            <span class="badge badge-info">All 6 Required in Study</span>
+            <div>
+              <h3>1B. Six Household Tasks Catalog</h3>
+              <p style="font-size: 12px; color: var(--text-muted); margin: 2px 0 0 0;">
+                Click any task card to select it as the active mission, or choose Multi-Task mode.
+              </p>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <button class="btn btn-sm ${appState.activeTaskFocus === 'ALL' ? 'btn-primary' : 'btn-outline'}" id="allTasksFocusBtn" title="Test all tasks in parallel">
+                🤖 All 6 Tasks (Multi-Task)
+              </button>
+            </div>
           </div>
           <div class="task-catalog-grid">
-            ${TASKS_CATALOG.map(t => `
-              <div class="task-card ${appState.activeTaskFocus === t.id ? 'active-task' : ''}" data-task-id="${t.id}">
-                <div class="task-card-header">
-                  <span class="task-card-icon">${t.icon}</span>
-                  <strong>${t.name}</strong>
+            ${TASKS_CATALOG.map(t => {
+              const isSelected = appState.activeTaskFocus === t.id;
+              return `
+                <div class="task-card ${isSelected ? 'active-task' : ''}" data-task-id="${t.id}" style="cursor: pointer; position: relative;">
+                  ${isSelected ? `<span class="task-selected-badge" style="position: absolute; top: -10px; right: 10px; background: #22c55e; color: #000; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px; box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);">✓ ACTIVE MISSION</span>` : ''}
+                  <div class="task-card-header">
+                    <span class="task-card-icon">${t.icon}</span>
+                    <strong>${t.name}</strong>
+                  </div>
+                  <p class="task-card-desc">${t.description}</p>
+                  <div class="task-card-footer">
+                    <span class="dim-pill" style="border-color: ${PEAS_DIMENSIONS[t.primaryDimension].color}; color: ${PEAS_DIMENSIONS[t.primaryDimension].color}">
+                      ${t.primaryDimension}
+                    </span>
+                    <span class="req-modules">${t.requiredModuleNames.length} modules needed</span>
+                  </div>
                 </div>
-                <p class="task-card-desc">${t.description}</p>
-                <div class="task-card-footer">
-                  <span class="dim-pill" style="border-color: ${PEAS_DIMENSIONS[t.primaryDimension].color}; color: ${PEAS_DIMENSIONS[t.primaryDimension].color}">
-                    ${t.primaryDimension}
-                  </span>
-                  <span class="req-modules">${t.requiredModuleNames.length} modules needed</span>
-                </div>
-              </div>
-            `).join('')}
+              `;
+            }).join('')}
           </div>
         </div>
 
@@ -190,6 +203,21 @@ export class StepsView {
       sessionLogger.log('PURPOSE_UPDATED', e.target.value);
     });
 
+    this.panel.querySelectorAll('.task-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const taskId = card.getAttribute('data-task-id');
+        appState.setActiveTask(taskId);
+        sound.playSnap();
+        this.renderStep1();
+      });
+    });
+
+    this.panel.querySelector('#allTasksFocusBtn')?.addEventListener('click', () => {
+      appState.setActiveTask('ALL');
+      sound.playSnap();
+      this.renderStep1();
+    });
+
     this.panel.querySelector('.next-step-btn')?.addEventListener('click', () => {
       sound.playSnap();
       appState.setStep(2);
@@ -254,11 +282,14 @@ export class StepsView {
         <div class="sensor-selection-grid">
           ${SENSORS_CATALOG.map(s => {
             const isInstalled = installed.has(s.id);
+            const activeTask = TASKS_CATALOG.find(t => t.id === appState.activeTaskFocus);
+            const isRec = activeTask && activeTask.recommendedSensors.includes(s.id);
             return `
-              <div class="sensor-card ${isInstalled ? 'installed' : ''} ${s.isDistractor ? 'distractor-item' : ''}" data-sensor-id="${s.id}">
+              <div class="sensor-card ${isInstalled ? 'installed' : ''} ${s.isDistractor ? 'distractor-item' : ''} ${isRec ? 'task-highlight-card' : ''}" data-sensor-id="${s.id}">
                 <div class="sensor-card-top">
                   <span class="sensor-id-pill">${s.id}</span>
                   <span class="sensor-icon">${s.icon}</span>
+                  ${isRec ? `<span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid #38bdf8; font-size: 10px; padding: 2px 6px;">⭐ ${activeTask.shortName}</span>` : ''}
                   <button class="sensor-toggle-btn ${isInstalled ? 'btn-remove' : 'btn-add'}">
                     ${isInstalled ? '✓ Mounted' : '+ Mount'}
                   </button>
@@ -448,11 +479,14 @@ export class StepsView {
                 <div class="actuator-cards-grid">
                   ${actuators.map(act => {
                     const isMounted = installed.has(act.id);
+                    const activeTask = TASKS_CATALOG.find(t => t.id === appState.activeTaskFocus);
+                    const isReq = activeTask && activeTask.requiredActuators.includes(act.id);
                     return `
-                      <div class="actuator-card ${isMounted ? 'mounted' : ''} ${act.isDistractor ? 'distractor-item' : ''}" data-act-id="${act.id}">
+                      <div class="actuator-card ${isMounted ? 'mounted' : ''} ${act.isDistractor ? 'distractor-item' : ''} ${isReq ? 'task-highlight-card' : ''}" data-act-id="${act.id}">
                         <div class="actuator-card-top">
                           <span class="act-icon">${act.icon}</span>
                           <strong>${act.name}</strong>
+                          ${isReq ? `<span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981; font-size: 10px; padding: 2px 6px;">⭐ ${activeTask.shortName}</span>` : ''}
                           <button class="act-toggle-btn ${isMounted ? 'btn-remove' : 'btn-add'}">
                             ${isMounted ? '✓ Bonded' : '+ Attach'}
                           </button>

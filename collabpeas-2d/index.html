@@ -89,6 +89,10 @@
         <span class="hud-status-dot running" id="hudStatusDot"></span>
         <span class="hud-status-text" id="hudStatusText">SIM RUNNING</span>
         <span class="hud-tick-pill" id="hudTickText">Tick 0</span>
+        <div class="hud-task-badge" id="hudTaskBadge" title="Current focused task">
+          <span id="hudTaskIcon">🧹</span>
+          <span id="hudTaskName">Task 1: Vacuum Floor</span>
+        </div>
       </div>
 
       <div class="sim-hud-controls">
@@ -164,6 +168,20 @@
 
     <!-- Header Action Controls -->
     <div class="header-actions">
+      <!-- Active Mission / Task Selector Dropdown -->
+      <div class="task-selector-wrapper" title="Select household mission to focus and test">
+        <span class="task-selector-label">🎯 Mission:</span>
+        <select id="headerTaskSelect" class="header-task-select">
+          <option value="ALL">🤖 All 6 Tasks (Multi-Task)</option>
+          <option value="TASK_1" selected>🧹 Task 1: Vacuum Floor</option>
+          <option value="TASK_2">📦 Task 2: Sort Objects</option>
+          <option value="TASK_3">💧 Task 3: Clean Spills</option>
+          <option value="TASK_4">🐱 Task 4: Avoid Cat</option>
+          <option value="TASK_5">🚶 Task 5: Slow Near Humans</option>
+          <option value="TASK_6">⚡ Task 6: Return to Dock</option>
+        </select>
+      </div>
+
       <!-- 360° View Mode Dropdown / Button Group -->
       <div class="view-mode-group">
         <button class="btn-mode active" id="viewMode3DBtn" title="Interactive 3D 360° Orbit (Apartment.glb)">

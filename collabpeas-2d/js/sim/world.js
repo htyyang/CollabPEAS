@@ -74,31 +74,41 @@ export class ApartmentWorld {
       }
     ];
 
-    // Solid obstacles matching the visible 3D walls & furniture in Apartment.png
+    // Solid obstacles matching the visible walls & furniture in Apartment.png / Apartment.glb
+    // Configured with generous open doorways (no air walls) and clear corridors
     this.obstacles = [
-      // Outer Perimeter Walls
-      { x: 130, y: 90, w: 25, h: 920, type: 'wall' },   // West outer wall
-      { x: 1080, y: 360, w: 25, h: 650, type: 'wall' },  // East outer wall
-      { x: 150, y: 1010, w: 930, h: 25, type: 'wall' },  // South outer wall
-      { x: 380, y: 25, w: 25, h: 140, type: 'wall' },   // Top TV alcove wall
-      { x: 780, y: 85, w: 25, h: 280, type: 'wall' },   // Living-corridor partition
+      // Outer Perimeter Boundaries
+      { x: 130, y: 90, w: 22, h: 920, type: 'wall' },   // West outer wall
+      { x: 1075, y: 360, w: 22, h: 650, type: 'wall' }, // East outer wall
+      { x: 140, y: 1005, w: 940, h: 22, type: 'wall' }, // South outer wall
+      { x: 380, y: 30, w: 22, h: 110, type: 'wall' },   // Top TV alcove wall
 
-      // Interior Dividing Walls
-      { x: 450, y: 620, w: 22, h: 390, type: 'wall' },  // Kitchen-Dining wall
-      { x: 740, y: 670, w: 22, h: 340, type: 'wall' },  // Dining-Bedroom wall
-      { x: 780, y: 370, w: 22, h: 280, type: 'wall' },  // Bathroom left wall
-      { x: 1060, y: 440, w: 22, h: 240, type: 'wall' }, // Bathroom right wall
+      // Interior Architectural Partitions & Doorways
+      // Living Room <-> Hallway (wide open corridor from y: 250 to 370)
+      { x: 780, y: 85, w: 20, h: 165, type: 'wall' },
 
-      // Furniture in Apartment.png
-      { x: 230, y: 220, w: 90, h: 180, type: 'furniture', name: 'Grey Sectional Sofa' },
-      { x: 380, y: 290, w: 75, h: 90, type: 'furniture', name: 'Coffee Table' },
-      { x: 390, y: 85, w: 160, h: 70, type: 'furniture', name: 'TV Console & Monitors' },
-      { x: 180, y: 640, w: 100, h: 210, type: 'furniture', name: 'Kitchen Counter Island' },
-      { x: 280, y: 770, w: 75, h: 80, type: 'furniture', name: 'Refrigerator' },
-      { x: 530, y: 720, w: 130, h: 130, type: 'furniture', name: 'Round Dining Set' },
-      { x: 780, y: 770, w: 170, h: 190, type: 'furniture', name: 'King Bed' },
-      { x: 840, y: 395, w: 160, h: 80, type: 'furniture', name: 'Bathtub' },
-      { x: 860, y: 570, w: 60, h: 45, type: 'furniture', name: 'Vanity Sink' }
+      // Kitchen <-> Dining (wide open archway y: 600..790, counter divider at y: 800..1005)
+      { x: 450, y: 800, w: 18, h: 205, type: 'wall' },
+
+      // Hallway <-> Master Bedroom (wide doorway y: 610..720, wall divider at y: 720..1005)
+      { x: 745, y: 720, w: 18, h: 285, type: 'wall' },
+
+      // Bathroom Walls (wide doorway into bathroom between y: 475 and 565)
+      { x: 780, y: 370, w: 18, h: 105, type: 'wall' }, // Bathroom left upper wall
+      { x: 780, y: 565, w: 18, h: 95, type: 'wall' },  // Bathroom left lower wall
+      { x: 780, y: 370, w: 295, h: 18, type: 'wall' }, // Bathroom top wall
+      { x: 1060, y: 440, w: 18, h: 220, type: 'wall' },// Bathroom right wall
+
+      // Furniture Footprints (Trimmed to visual boundaries for smooth walking clearance)
+      { x: 235, y: 225, w: 80, h: 170, type: 'furniture', name: 'Grey Sectional Sofa' },
+      { x: 385, y: 295, w: 65, h: 80, type: 'furniture', name: 'Coffee Table' },
+      { x: 395, y: 90, w: 150, h: 55, type: 'furniture', name: 'TV Console & Monitors' },
+      { x: 185, y: 650, w: 85, h: 190, type: 'furniture', name: 'Kitchen Counter Island' },
+      { x: 285, y: 780, w: 65, h: 70, type: 'furniture', name: 'Refrigerator' },
+      { x: 540, y: 730, w: 110, h: 110, type: 'furniture', name: 'Round Dining Set' },
+      { x: 790, y: 780, w: 150, h: 170, type: 'furniture', name: 'King Bed' },
+      { x: 850, y: 400, w: 145, h: 70, type: 'furniture', name: 'Bathtub' },
+      { x: 865, y: 575, w: 50, h: 40, type: 'furniture', name: 'Vanity Sink' }
     ];
 
     // Charging Dock Station (Living room corner / hallway)
@@ -296,7 +306,13 @@ export class ApartmentWorld {
     this.robot.pathTrail = [];
   }
 
-  checkCollision(x, y, radius) {
+  checkCollision(x, y, radius = 16) {
+    // 1. Apartment outer perimeter boundaries
+    if (x - radius < 145 || x + radius > 1070 || y - radius < 90 || y + radius > 1005) {
+      return true;
+    }
+
+    // 2. Obstacles check
     for (const ob of this.obstacles) {
       if (x + radius > ob.x && x - radius < ob.x + ob.w &&
           y + radius > ob.y && y - radius < ob.y + ob.h) {
@@ -304,5 +320,32 @@ export class ApartmentWorld {
       }
     }
     return false;
+  }
+
+  /**
+   * Smooth movement resolver with wall-sliding collision response.
+   * Prevents getting stuck on corners or invisible barriers.
+   */
+  resolveMove(startX, startY, dx, dy, radius = 16) {
+    const targetX = startX + dx;
+    const targetY = startY + dy;
+
+    // 1. Try full diagonal/composite move
+    if (!this.checkCollision(targetX, targetY, radius)) {
+      return { x: targetX, y: targetY, moved: true };
+    }
+
+    // 2. Try sliding along X axis
+    if (Math.abs(dx) > 0.001 && !this.checkCollision(targetX, startY, radius)) {
+      return { x: targetX, y: startY, moved: true };
+    }
+
+    // 3. Try sliding along Y axis
+    if (Math.abs(dy) > 0.001 && !this.checkCollision(startX, targetY, radius)) {
+      return { x: startX, y: targetY, moved: true };
+    }
+
+    // Blocked
+    return { x: startX, y: startY, moved: false };
   }
 }

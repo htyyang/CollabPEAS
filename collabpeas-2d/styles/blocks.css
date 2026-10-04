@@ -68,6 +68,12 @@
   background-color: rgba(16, 185, 129, 0.05);
 }
 
+.task-zone-card.focused {
+  border-color: #38bdf8;
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.4);
+  background-color: rgba(56, 189, 248, 0.06);
+}
+
 .zone-title-bar {
   display: flex;
   align-items: center;

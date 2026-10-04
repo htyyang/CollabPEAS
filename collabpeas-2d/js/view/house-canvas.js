@@ -135,8 +135,13 @@ export class HouseCanvasRenderer {
         this.updateCompassHud();
       }
 
+      const k = e.key.toLowerCase();
       if (this.keys.hasOwnProperty(e.key)) {
         this.keys[e.key] = true;
+        e.preventDefault();
+      }
+      if (this.keys.hasOwnProperty(k)) {
+        this.keys[k] = true;
         e.preventDefault();
       }
       if (e.key === ' ' && this.activeStationPrompt) {
@@ -147,8 +152,12 @@ export class HouseCanvasRenderer {
     });
 
     window.addEventListener('keyup', (e) => {
+      const k = e.key.toLowerCase();
       if (this.keys.hasOwnProperty(e.key)) {
         this.keys[e.key] = false;
+      }
+      if (this.keys.hasOwnProperty(k)) {
+        this.keys[k] = false;
       }
     });
 
@@ -288,38 +297,39 @@ export class HouseCanvasRenderer {
 
   updateAvatar() {
     const avatar = this.world.avatar;
-    let dx = 0;
-    let dy = 0;
 
-    if (this.keys.ArrowUp || this.keys.w) dy -= 1;
-    if (this.keys.ArrowDown || this.keys.s) dy += 1;
-    if (this.keys.ArrowLeft || this.keys.a) dx -= 1;
-    if (this.keys.ArrowRight || this.keys.d) dx += 1;
+    // If 3D Orbit or FPS mode is active, map-3d.js handles camera-relative avatar locomotion
+    if (window.currentViewMode === '3d' || window.currentViewMode === 'fps') {
+      return;
+    }
 
-    if (dx !== 0 || dy !== 0) {
+    let screenX = 0;
+    let screenY = 0;
+
+    if (this.keys.ArrowUp || this.keys.w) screenY -= 1;
+    if (this.keys.ArrowDown || this.keys.s) screenY += 1;
+    if (this.keys.ArrowLeft || this.keys.a) screenX -= 1;
+    if (this.keys.ArrowRight || this.keys.d) screenX += 1;
+
+    if (screenX !== 0 || screenY !== 0) {
       avatar.targetX = null;
       avatar.targetY = null;
 
-      // Rotate movement vector by current camera heading so W/Up always moves camera-forward
-      if (this.headingAngle) {
-        const cos = Math.cos(this.headingAngle);
-        const sin = Math.sin(this.headingAngle);
-        const rdx = dx * cos - dy * sin;
-        const rdy = dx * sin + dy * cos;
-        dx = rdx;
-        dy = rdy;
-      }
+      // Invert heading angle so Up/W ALWAYS moves toward the top of the user's screen
+      const angle = -this.headingAngle;
+      const cos = Math.cos(angle);
+      const sin = Math.sin(angle);
+      let dx = screenX * cos - screenY * sin;
+      let dy = screenX * sin + screenY * cos;
 
       const len = Math.hypot(dx, dy);
       dx = (dx / len) * avatar.speed;
       dy = (dy / len) * avatar.speed;
 
-      const nx = avatar.x + dx;
-      const ny = avatar.y + dy;
-
-      if (!this.world.checkCollision(nx, ny, avatar.radius)) {
-        avatar.x = nx;
-        avatar.y = ny;
+      const res = this.world.resolveMove(avatar.x, avatar.y, dx, dy, avatar.radius);
+      if (res.moved) {
+        avatar.x = res.x;
+        avatar.y = res.y;
         avatar.heading = Math.atan2(dy, dx);
         avatar.moving = true;
         this.walkCycle += 0.22;
@@ -329,11 +339,12 @@ export class HouseCanvasRenderer {
       const tdy = avatar.targetY - avatar.y;
       const dist = Math.hypot(tdx, tdy);
       if (dist > 5) {
-        const nx = avatar.x + (tdx / dist) * avatar.speed;
-        const ny = avatar.y + (tdy / dist) * avatar.speed;
-        if (!this.world.checkCollision(nx, ny, avatar.radius)) {
-          avatar.x = nx;
-          avatar.y = ny;
+        const dx = (tdx / dist) * avatar.speed;
+        const dy = (tdy / dist) * avatar.speed;
+        const res = this.world.resolveMove(avatar.x, avatar.y, dx, dy, avatar.radius);
+        if (res.moved) {
+          avatar.x = res.x;
+          avatar.y = res.y;
           avatar.heading = Math.atan2(tdy, tdx);
           avatar.moving = true;
           this.walkCycle += 0.22;

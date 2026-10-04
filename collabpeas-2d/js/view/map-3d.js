@@ -589,15 +589,18 @@ export class Apartment3DMap {
     // Keyboard inputs for FPS Walkthrough Mode
     window.addEventListener('keydown', (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-      if (this.keys.hasOwnProperty(e.key)) {
-        this.keys[e.key] = true;
-      }
+      const modal = document.getElementById('stepModalOverlay');
+      if (modal && modal.style.display !== 'none') return;
+
+      const k = e.key.toLowerCase();
+      if (this.keys.hasOwnProperty(e.key)) this.keys[e.key] = true;
+      if (this.keys.hasOwnProperty(k)) this.keys[k] = true;
     });
 
     window.addEventListener('keyup', (e) => {
-      if (this.keys.hasOwnProperty(e.key)) {
-        this.keys[e.key] = false;
-      }
+      const k = e.key.toLowerCase();
+      if (this.keys.hasOwnProperty(e.key)) this.keys[e.key] = false;
+      if (this.keys.hasOwnProperty(k)) this.keys[k] = false;
     });
   }
 
@@ -764,28 +767,95 @@ export class Apartment3DMap {
       st.ringMesh.scale.set(pulse, pulse, pulse);
     });
 
-    // 6. First-Person Mode Controls Update
+    // 6. Avatar Locomotion Update (Camera-Relative Screen Space & Wall Sliding)
     if (this.viewMode === 'fps') {
       this.updateFpsLocomotion(delta);
     } else {
       this.controls.update();
+      this.updateOrbitLocomotion(delta);
     }
 
     // 7. Synchronize 360° Compass Widget
     this.updateCompassHud();
   }
 
+  /**
+   * 3D Orbit Mode: Locomotion is strictly relative to the 3D camera view.
+   * Up/W ALWAYS moves into the scene (away from camera / screen-up).
+   * Down/S ALWAYS moves toward the camera (screen-down).
+   * Left/A ALWAYS moves to the left of the screen.
+   * Right/D ALWAYS moves to the right of the screen.
+   * Wall sliding is applied so the avatar never gets stuck on obstacles or corners.
+   */
+  updateOrbitLocomotion(delta) {
+    const avatar = this.world.avatar;
+    let inputForward = 0;
+    let inputRight = 0;
+
+    if (this.keys.w || this.keys.W || this.keys.ArrowUp) inputForward += 1;
+    if (this.keys.s || this.keys.S || this.keys.ArrowDown) inputForward -= 1;
+    if (this.keys.d || this.keys.D || this.keys.ArrowRight) inputRight += 1;
+    if (this.keys.a || this.keys.A || this.keys.ArrowLeft) inputRight -= 1;
+
+    if (inputForward === 0 && inputRight === 0) {
+      if (!avatar.targetX && !avatar.targetY) {
+        avatar.moving = false;
+      }
+      return;
+    }
+
+    avatar.targetX = null;
+    avatar.targetY = null;
+
+    // Camera horizontal forward and right vectors
+    const forward = new THREE.Vector3();
+    this.camera.getWorldDirection(forward);
+    forward.y = 0;
+    forward.normalize();
+
+    const right = new THREE.Vector3();
+    right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+
+    // 3D movement vector on ground plane
+    const move3D = new THREE.Vector3()
+      .addScaledVector(forward, inputForward)
+      .addScaledVector(right, inputRight)
+      .normalize();
+
+    // Map 3D ground motion to 2D coordinate delta
+    const dx2d = move3D.x * (950 / 17.5);
+    const dy2d = move3D.z * (920 / 15.0);
+
+    const len = Math.hypot(dx2d, dy2d);
+    if (len > 0) {
+      const step = avatar.speed * (delta ? Math.min(delta * 60, 2.0) : 1.0);
+      const ndx = (dx2d / len) * step;
+      const ndy = (dy2d / len) * step;
+
+      const res = this.world.resolveMove(avatar.x, avatar.y, ndx, ndy, avatar.radius);
+      if (res.moved) {
+        avatar.x = res.x;
+        avatar.y = res.y;
+        avatar.heading = Math.atan2(ndy, ndx);
+        avatar.moving = true;
+      }
+    }
+  }
+
+  /**
+   * First-Person Walkthrough Mode: Locomotion with smooth wall sliding.
+   */
   updateFpsLocomotion(delta) {
     const avatar = this.world.avatar;
-    const speed = avatar.speed * 8 * delta;
+    const step = avatar.speed * (delta ? Math.min(delta * 60, 2.0) : 1.0);
 
     let moveX = 0;
     let moveZ = 0;
 
-    if (this.keys.w || this.keys.ArrowUp) moveZ += 1;
-    if (this.keys.s || this.keys.ArrowDown) moveZ -= 1;
-    if (this.keys.a || this.keys.ArrowLeft) moveX -= 1;
-    if (this.keys.d || this.keys.ArrowRight) moveX += 1;
+    if (this.keys.w || this.keys.W || this.keys.ArrowUp) moveZ += 1;
+    if (this.keys.s || this.keys.S || this.keys.ArrowDown) moveZ -= 1;
+    if (this.keys.a || this.keys.A || this.keys.ArrowLeft) moveX -= 1;
+    if (this.keys.d || this.keys.D || this.keys.ArrowRight) moveX += 1;
 
     if (moveX !== 0 || moveZ !== 0) {
       const forward = new THREE.Vector3(Math.sin(this.fpsYaw), 0, Math.cos(this.fpsYaw));
@@ -796,12 +866,28 @@ export class Apartment3DMap {
         .addScaledVector(right, moveX)
         .normalize();
 
-      this.camera.position.addScaledVector(dir, speed);
-      const { x, y } = this.to2D(this.camera.position.x, this.camera.position.z);
-      avatar.x = x;
-      avatar.y = y;
-      avatar.heading = this.fpsYaw;
+      const dx2d = dir.x * (950 / 17.5);
+      const dy2d = dir.z * (920 / 15.0);
+      const len = Math.hypot(dx2d, dy2d);
+      if (len > 0) {
+        const ndx = (dx2d / len) * step;
+        const ndy = (dy2d / len) * step;
+
+        const res = this.world.resolveMove(avatar.x, avatar.y, ndx, ndy, avatar.radius);
+        if (res.moved) {
+          avatar.x = res.x;
+          avatar.y = res.y;
+          avatar.heading = this.fpsYaw;
+          avatar.moving = true;
+        }
+      }
+    } else {
+      avatar.moving = false;
     }
+
+    // Follow avatar eye level
+    const avatarPos = this.to3D(avatar.x, avatar.y, 1.65);
+    this.camera.position.copy(avatarPos);
 
     // Camera look direction from yaw and pitch
     const lookDir = new THREE.Vector3(

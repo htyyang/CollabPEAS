@@ -294,26 +294,60 @@ export class SimulationEngine {
       else if (condition === 'COND_17' && (percepts.SENSE_15 === 'CUP' || percepts.SENSE_15 === 'FOOD')) condPassed = true;
 
       if (condPassed) {
-        const isHighPriority = control === 'CTRL_05';
+        let priority = control === 'CTRL_05' ? 10 : 1;
+        // Priority boost when this rule matches the user's active selected task
+        if (appState.activeTaskFocus && appState.activeTaskFocus !== 'ALL' && rule.taskId === appState.activeTaskFocus) {
+          priority += 15;
+        }
         triggeredRules.push({
           ruleIndex: i,
           taskName: rule.taskName,
           action,
-          priority: isHighPriority ? 10 : 1,
+          priority,
           trace: { sense, condition, action, control }
         });
       }
     }
 
     if (triggeredRules.length === 0) {
-      // Default autonomous patrol action when no rule condition triggers:
-      // Move forward, or rotate if obstacle is close ahead
-      const frontDist = this.raycastObstacle(this.world.robot.x, this.world.robot.y, this.world.robot.heading);
+      // Task-targeted autonomous navigation
+      const robot = this.world.robot;
+      const frontDist = this.raycastObstacle(robot.x, robot.y, robot.heading);
+
       if (frontDist < 45) {
-        return { action: 'ACT_04', priority: 0, trace: null }; // turn right
-      } else {
-        return { action: 'ACT_01', priority: 0, trace: null }; // cruise forward
+        return { action: 'ACT_04', priority: 0, trace: null }; // turn right to avoid obstacle
       }
+
+      // Check if there is an active task objective to seek
+      let target = null;
+      if (appState.activeTaskFocus === 'TASK_1') {
+        target = this.world.dirtCells.find(c => !c.cleaned);
+      } else if (appState.activeTaskFocus === 'TASK_2') {
+        if (robot.heldObject) {
+          target = robot.heldObject.type === 'TRASH' ? this.world.smartBin : this.world.depositTable;
+        } else {
+          target = this.world.objects.find(o => !o.carried && !o.disposed);
+        }
+      } else if (appState.activeTaskFocus === 'TASK_3') {
+        target = this.world.wetCells.find(w => !w.cleaned);
+      } else if (appState.activeTaskFocus === 'TASK_6') {
+        target = this.world.dock;
+      }
+
+      if (target) {
+        const dx = target.x - robot.x;
+        const dy = target.y - robot.y;
+        const targetAngle = Math.atan2(dy, dx);
+        let diff = targetAngle - robot.heading;
+        while (diff > Math.PI) diff -= 2 * Math.PI;
+        while (diff < -Math.PI) diff += 2 * Math.PI;
+
+        if (Math.abs(diff) > 0.35) {
+          return { action: diff > 0 ? 'ACT_04' : 'ACT_03', priority: 0, trace: null };
+        }
+      }
+
+      return { action: 'ACT_01', priority: 0, trace: null }; // cruise forward
     }
 
     // Sort by priority (CTRL_05 HIGH priority wins over normal)
@@ -331,13 +365,14 @@ export class SimulationEngine {
       case 'ACT_01': // MOVE FORWARD
         robot.isStopped = false;
         const currentSpeed = robot.isSlow ? 0.9 : robot.speed;
-        const nx = robot.x + Math.cos(robot.heading) * currentSpeed;
-        const ny = robot.y + Math.sin(robot.heading) * currentSpeed;
-        if (!this.world.checkCollision(nx, ny, robot.radius)) {
-          robot.x = nx;
-          robot.y = ny;
+        const dx = Math.cos(robot.heading) * currentSpeed;
+        const dy = Math.sin(robot.heading) * currentSpeed;
+        const res = this.world.resolveMove(robot.x, robot.y, dx, dy, robot.radius);
+        if (res.moved) {
+          robot.x = res.x;
+          robot.y = res.y;
         } else {
-          // Slide or turn when hitting wall
+          // Slide or turn when hitting obstacle
           robot.heading += Math.PI / 4;
         }
         break;
