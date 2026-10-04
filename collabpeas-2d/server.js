@@ -53,12 +53,35 @@ const server = http.createServer((req, res) => {
     const ext = path.extname(filePath).toLowerCase();
     const contentType = MIME_TYPES[ext] || 'application/octet-stream';
 
+    // Support HTTP Range requests (crucial for large 81MB GLB files & media streaming)
+    const range = req.headers.range;
+    if (range) {
+      const parts = range.replace(/bytes=/, '').split('-');
+      const start = parseInt(parts[0], 10);
+      const end = parts[1] ? parseInt(parts[1], 10) : stats.size - 1;
+      const chunkSize = (end - start) + 1;
+
+      res.writeHead(206, {
+        'Content-Range': `bytes ${start}-${end}/${stats.size}`,
+        'Accept-Ranges': 'bytes',
+        'Content-Length': chunkSize,
+        'Content-Type': contentType
+      });
+
+      const stream = fs.createReadStream(filePath, { start, end });
+      stream.on('error', () => res.end());
+      stream.pipe(res);
+      return;
+    }
+
     res.writeHead(200, {
       'Content-Type': contentType,
-      'Content-Length': stats.size
+      'Content-Length': stats.size,
+      'Accept-Ranges': 'bytes'
     });
 
     const stream = fs.createReadStream(filePath);
+    stream.on('error', () => res.end());
     stream.pipe(res);
   });
 });

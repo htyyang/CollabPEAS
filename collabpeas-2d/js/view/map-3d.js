@@ -6,9 +6,9 @@
  * 3D Operator Avatar, Floor Decals, and Raycasting Interaction.
  */
 
-import * as THREE from 'three';
-import { GLTFLoader } from '../lib/three/GLTFLoader.js';
-import { OrbitControls } from '../lib/three/OrbitControls.js';
+import * as THREE from '../../lib/three/three.module.js';
+import { GLTFLoader } from '../../lib/three/GLTFLoader.js';
+import { OrbitControls } from '../../lib/three/OrbitControls.js';
 import { appState } from '../state.js';
 import { sound } from './audio.js';
 
@@ -153,41 +153,77 @@ export class Apartment3DMap {
     const progressFill = document.getElementById('glbProgressFill');
     const progressText = document.getElementById('glbProgressText');
     const overlay = document.getElementById('glbLoadingOverlay');
-    if (overlay) overlay.style.display = 'flex';
+    const cancelBtn = document.getElementById('cancelGlbLoadBtn');
+
+    const hideOverlay = () => {
+      if (overlay) {
+        overlay.style.opacity = '0';
+        setTimeout(() => { overlay.style.display = 'none'; }, 250);
+      }
+    };
+
+    // User can cancel and jump straight to 2D map at any time
+    cancelBtn?.addEventListener('click', () => {
+      hideOverlay();
+      window.switchViewMode?.('2d');
+      sound.playClick();
+    });
+
+    // Safety timeout: auto-dismiss overlay after 8 seconds so user is never trapped
+    const safetyTimer = setTimeout(() => {
+      if (!this.modelLoaded) {
+        console.warn('⏱️ GLB loading taking long, dismissing overlay to allow 2D interaction.');
+        hideOverlay();
+        window.switchViewMode?.('2d');
+      }
+    }, 8000);
 
     const loader = new GLTFLoader();
     loader.load(
       'assets/Apartment.glb',
       (gltf) => {
-        this.apartmentModel = gltf.scene;
-        this.apartmentModel.position.set(0, 0, 0);
+        clearTimeout(safetyTimer);
+        try {
+          this.apartmentModel = gltf.scene;
+          this.apartmentModel.position.set(0, 0, 0);
 
-        // Enable shadows and enhance materials
-        this.apartmentModel.traverse((child) => {
-          if (child.isMesh) {
-            child.castShadow = true;
-            child.receiveShadow = true;
-            if (child.material) {
-              child.material.roughness = Math.max(0.25, child.material.roughness || 0.6);
+          // Enable shadows and enhance materials
+          this.apartmentModel.traverse((child) => {
+            if (child.isMesh) {
+              child.castShadow = true;
+              child.receiveShadow = true;
+              if (child.material) {
+                child.material.roughness = Math.max(0.25, child.material.roughness || 0.6);
+              }
             }
-          }
-        });
+          });
 
-        this.scene.add(this.apartmentModel);
-        this.modelLoaded = true;
-        if (overlay) overlay.style.display = 'none';
-        console.log('✅ Apartment.glb Loaded Successfully into 360° WebGL View.');
+          this.scene.add(this.apartmentModel);
+          this.modelLoaded = true;
+          console.log('✅ Apartment.glb Loaded Successfully into 360° WebGL View.');
+          window.dispatchEvent(new CustomEvent('glbModelLoaded'));
+        } catch (err) {
+          console.error('Error processing Apartment.glb scene:', err);
+        } finally {
+          hideOverlay();
+        }
       },
       (xhr) => {
         if (xhr.lengthComputable && xhr.total > 0) {
-          const pct = Math.round((xhr.loaded / xhr.total) * 100);
+          const pct = Math.min(100, Math.round((xhr.loaded / xhr.total) * 100));
           if (progressFill) progressFill.style.width = `${pct}%`;
           if (progressText) progressText.innerText = `${pct}% Loaded (${(xhr.loaded / 1048576).toFixed(1)} MB)`;
+        } else if (xhr.loaded > 0) {
+          const mb = (xhr.loaded / 1048576).toFixed(1);
+          if (progressText) progressText.innerText = `${mb} MB Loaded`;
+          if (progressFill) progressFill.style.width = `${Math.min(95, Math.round(xhr.loaded / 850000))}%`;
         }
       },
       (err) => {
+        clearTimeout(safetyTimer);
         console.warn('⚠️ Error loading Apartment.glb:', err);
-        if (overlay) overlay.style.display = 'none';
+        hideOverlay();
+        window.switchViewMode?.('2d');
       }
     );
   }

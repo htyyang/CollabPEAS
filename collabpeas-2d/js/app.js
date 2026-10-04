@@ -133,6 +133,8 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  window.switchViewMode = switchViewMode;
+
   viewMode3DBtn?.addEventListener('click', () => { switchViewMode('3d'); sound.playClick(); });
   viewModeFpsBtn?.addEventListener('click', () => { switchViewMode('fps'); sound.playClick(); });
   viewMode2DBtn?.addEventListener('click', () => { switchViewMode('2d'); sound.playClick(); });

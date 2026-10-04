@@ -20,7 +20,7 @@
   <!-- 1. Full-Screen Interactive Apartment Viewport Layer -->
   <div class="fullscreen-house-container" id="fullscreenHouseContainer">
     <!-- 2D Canvas View (with 360° rotation) -->
-    <canvas id="houseCanvas" style="display: none;"></canvas>
+    <canvas id="houseCanvas"></canvas>
 
     <!-- 3D WebGL Three.js Canvas View (Apartment.glb) -->
     <canvas id="threeCanvas"></canvas>
@@ -34,6 +34,9 @@
           <div class="loading-progress-fill" id="glbProgressFill" style="width: 15%;"></div>
         </div>
         <div class="loading-sub" id="glbProgressText">Initializing 360° Interactive Environment...</div>
+        <button class="btn btn-sm btn-outline cancel-glb-btn" id="cancelGlbLoadBtn" style="margin-top: 14px; font-weight: 600;">
+          ✕ Skip to 2D Map
+        </button>
       </div>
     </div>
 
