@@ -50,4 +50,6 @@ Open **`http://localhost:8088`** in Google Chrome, Apple Safari, Microsoft Edge,
 ## 📚 Documentation
 
 - 📘 **[Workflow & User Guide](docs/WORKFLOW_AND_USER_GUIDE.md)**: End-to-end user manual, step-by-step PEAS walkthrough, simulation tracking, collaboration protocol, and shortcuts.
+- 🤝 **[Research Partner Guide](docs/RESEARCH_PARTNER_GUIDE.md)**: Experimental protocol, dyadic collaboration norms, participant briefing, and CSV telemetry schema.
 - 🛠️ **[Architecture & Development Document](docs/DEVELOPMENT.md)**: Deep technical architecture, data schemas, mathematical formulations, and CSCW alignment.
+
