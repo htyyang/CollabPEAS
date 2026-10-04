@@ -718,6 +718,12 @@ export class StepsView {
 
     this.panel.querySelector('#watchInMapBtn')?.addEventListener('click', () => {
       window.closeStepModal?.();
+      window.simEngine?.start();
+      if (window.currentViewMode === '2d') {
+        window.houseCanvas?.focusRobot();
+      } else {
+        window.map3d?.focusRobot();
+      }
       sound.playClick();
     });
 

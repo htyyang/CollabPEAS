@@ -98,6 +98,15 @@ export class HouseCanvasRenderer {
     this.updateCompassHud();
   }
 
+  focusRobot() {
+    if (!this.world.robot) return;
+    const r = this.world.robot;
+    const cx = this.cssWidth / 2;
+    const cy = this.cssHeight / 2;
+    this.camera.x = cx - r.x * this.camera.scale;
+    this.camera.y = cy - r.y * this.camera.scale;
+  }
+
   updateCompassHud() {
     const needle = document.getElementById('compassNeedle');
     const readout = document.getElementById('compassReadout');

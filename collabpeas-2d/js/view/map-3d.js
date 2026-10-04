@@ -132,7 +132,7 @@ export class Apartment3DMap {
   // -------------------------------------------------------------
   // 2. COORDINATE TRANSFORMATIONS (2D Canvas World <-> 3D GLB Model)
   // -------------------------------------------------------------
-  to3D(x2d, y2d, yElev = 0.08) {
+  to3D(x2d, y2d, yElev = 0.12) {
     // 2D: X from 130 to 1080 (span 950) -> 3D: X from -5.0 to 12.5 (span 17.5)
     // 2D: Y from 90 to 1010 (span 920) -> 3D: Z from -7.5 to 7.5 (span 15.0)
     const x3d = -5.0 + ((x2d - 130) / 950) * 17.5;
@@ -249,7 +249,7 @@ export class Apartment3DMap {
     ];
 
     STATIONS_DEF.forEach(st => {
-      const pos = this.to3D(st.x2d, st.y2d, 0.05);
+      const pos = this.to3D(st.x2d, st.y2d, 0.12);
 
       const group = new THREE.Group();
       group.position.copy(pos);
@@ -325,36 +325,97 @@ export class Apartment3DMap {
   create3DRobot() {
     this.robotGroup = new THREE.Group();
 
-    // Metallic Disc Chassis
-    const bodyGeom = new THREE.CylinderGeometry(0.38, 0.40, 0.15, 32);
+    // 1. Lower Pulsing Ground Halo Disc (ensures high visibility from high camera angles)
+    const groundGeom = new THREE.RingGeometry(0.55, 0.72, 32);
+    groundGeom.rotateX(-Math.PI / 2);
+    this.robotGroundMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.55,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    this.robotGroundBeacon = new THREE.Mesh(groundGeom, this.robotGroundMat);
+    this.robotGroundBeacon.position.y = -0.09;
+    this.robotGroup.add(this.robotGroundBeacon);
+
+    // 2. Main Metallic Chassis Body
+    const bodyGeom = new THREE.CylinderGeometry(0.46, 0.48, 0.18, 36);
     const bodyMat = new THREE.MeshStandardMaterial({
-      color: 0x334155,
+      color: 0x1e293b,
       metalness: 0.85,
-      roughness: 0.25
+      roughness: 0.2
     });
     const body = new THREE.Mesh(bodyGeom, bodyMat);
     body.castShadow = true;
     body.receiveShadow = true;
     this.robotGroup.add(body);
 
-    // Glowing LED Status Ring on Top
-    const ledGeom = new THREE.TorusGeometry(0.28, 0.025, 12, 32);
+    // 3. Chrome Top Shell Trim
+    const topShellGeom = new THREE.CylinderGeometry(0.42, 0.44, 0.04, 36);
+    const topShellMat = new THREE.MeshStandardMaterial({
+      color: 0x475569,
+      metalness: 0.9,
+      roughness: 0.15
+    });
+    const topShell = new THREE.Mesh(topShellGeom, topShellMat);
+    topShell.position.y = 0.10;
+    this.robotGroup.add(topShell);
+
+    // 4. Rotating Lidar Scanner Turret
+    const turretBaseGeom = new THREE.CylinderGeometry(0.14, 0.16, 0.06, 24);
+    const turretBaseMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.3 });
+    const turretBase = new THREE.Mesh(turretBaseGeom, turretBaseMat);
+    turretBase.position.y = 0.14;
+    this.robotGroup.add(turretBase);
+
+    this.robotLidarTurret = new THREE.Group();
+    this.robotLidarTurret.position.y = 0.18;
+    const lidarHeadGeom = new THREE.CylinderGeometry(0.09, 0.09, 0.05, 16);
+    const lidarHeadMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.6 });
+    const lidarHead = new THREE.Mesh(lidarHeadGeom, lidarHeadMat);
+    this.robotLidarTurret.add(lidarHead);
+
+    const lidarEyeGeom = new THREE.BoxGeometry(0.05, 0.03, 0.04);
+    const lidarEyeMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+    const lidarEye = new THREE.Mesh(lidarEyeGeom, lidarEyeMat);
+    lidarEye.position.set(0, 0, 0.08);
+    this.robotLidarTurret.add(lidarEye);
+    this.robotGroup.add(this.robotLidarTurret);
+
+    // 5. Glowing LED Halo Perimeter Ring
+    const ledGeom = new THREE.TorusGeometry(0.46, 0.03, 16, 48);
     ledGeom.rotateX(Math.PI / 2);
-    this.robotLedMat = new THREE.MeshBasicMaterial({ color: 0x10b981 });
+    this.robotLedMat = new THREE.MeshStandardMaterial({
+      color: 0x10b981,
+      emissive: 0x10b981,
+      emissiveIntensity: 0.8,
+      roughness: 0.2
+    });
     const ledMesh = new THREE.Mesh(ledGeom, this.robotLedMat);
     ledMesh.position.y = 0.08;
     this.robotGroup.add(ledMesh);
 
-    // Front Bumper / Direction indicator
-    const bumpGeom = new THREE.BoxGeometry(0.18, 0.08, 0.12);
-    const bumpMat = new THREE.MeshStandardMaterial({ color: 0x0284c7 });
+    // 6. Dual Forward Headlights / Navigation Eyes
+    const lightGeom = new THREE.SphereGeometry(0.045, 16, 16);
+    const lightMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+    const leftLight = new THREE.Mesh(lightGeom, lightMat);
+    leftLight.position.set(-0.20, 0.04, 0.42);
+    const rightLight = new THREE.Mesh(lightGeom, lightMat);
+    rightLight.position.set(0.20, 0.04, 0.42);
+    this.robotGroup.add(leftLight);
+    this.robotGroup.add(rightLight);
+
+    // 7. Front Directional Bumper
+    const bumpGeom = new THREE.BoxGeometry(0.28, 0.09, 0.12);
+    const bumpMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.5 });
     const bumper = new THREE.Mesh(bumpGeom, bumpMat);
-    bumper.position.set(0, 0.04, 0.35);
+    bumper.position.set(0, 0.02, 0.42);
     this.robotGroup.add(bumper);
 
-    // Overhead 3D Action Label Sprite
-    this.robotActionSprite = this.createRobotActionSprite('⚙️ READY');
-    this.robotActionSprite.position.set(0, 0.7, 0);
+    // 8. Overhead High-Visibility Billboard
+    this.robotActionSprite = this.createRobotActionSprite('⚙️ READY • 🔋 100%');
+    this.robotActionSprite.position.set(0, 0.95, 0);
     this.robotGroup.add(this.robotActionSprite);
 
     this.scene.add(this.robotGroup);
@@ -362,27 +423,36 @@ export class Apartment3DMap {
 
   createRobotActionSprite(actionText) {
     const canvas = document.createElement('canvas');
-    canvas.width = 384;
-    canvas.height = 96;
+    canvas.width = 440;
+    canvas.height = 110;
     const ctx = canvas.getContext('2d');
 
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-    ctx.strokeStyle = '#10b981';
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+    ctx.strokeStyle = '#38bdf8';
     ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.roundRect(8, 8, 368, 80, 16);
+    ctx.roundRect(8, 8, 424, 94, 18);
     ctx.fill();
     ctx.stroke();
 
-    ctx.fillStyle = '#34d399';
-    ctx.font = 'bold 28px -apple-system, sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 24px -apple-system, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(actionText, 192, 58);
+    ctx.fillText('🤖 CLEANING ROBOT', 220, 42);
+
+    ctx.fillStyle = '#34d399';
+    ctx.font = 'bold 22px -apple-system, sans-serif';
+    ctx.fillText(actionText, 220, 80);
 
     const texture = new THREE.CanvasTexture(canvas);
-    const spriteMat = new THREE.SpriteMaterial({ map: texture, depthTest: false, depthWrite: false });
+    const spriteMat = new THREE.SpriteMaterial({
+      map: texture,
+      depthTest: false,
+      depthWrite: false,
+      transparent: true
+    });
     const sprite = new THREE.Sprite(spriteMat);
-    sprite.scale.set(1.6, 0.4, 1);
+    sprite.scale.set(1.9, 0.48, 1);
     sprite.canvas = canvas;
     sprite.ctx = ctx;
     sprite.texture = texture;
@@ -394,18 +464,22 @@ export class Apartment3DMap {
     const { canvas, ctx, texture } = this.robotActionSprite;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-    ctx.strokeStyle = '#10b981';
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+    ctx.strokeStyle = '#38bdf8';
     ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.roundRect(8, 8, 368, 80, 16);
+    ctx.roundRect(8, 8, 424, 94, 18);
     ctx.fill();
     ctx.stroke();
 
-    ctx.fillStyle = '#34d399';
-    ctx.font = 'bold 28px -apple-system, sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 24px -apple-system, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(text, 192, 58);
+    ctx.fillText('🤖 CLEANING ROBOT', 220, 42);
+
+    ctx.fillStyle = '#34d399';
+    ctx.font = 'bold 22px -apple-system, sans-serif';
+    ctx.fillText(text, 220, 80);
 
     texture.needsUpdate = true;
   }
@@ -491,7 +565,7 @@ export class Apartment3DMap {
     const dirtMat = new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.9 });
 
     this.world.dirtCells.forEach(d => {
-      const pos = this.to3D(d.x, d.y, 0.02);
+      const pos = this.to3D(d.x, d.y, 0.11);
       const mesh = new THREE.Mesh(dirtGeom, dirtMat);
       mesh.position.copy(pos);
       this.scene.add(mesh);
@@ -510,7 +584,7 @@ export class Apartment3DMap {
     });
 
     this.world.wetCells.forEach(w => {
-      const pos = this.to3D(w.x, w.y, 0.025);
+      const pos = this.to3D(w.x, w.y, 0.115);
       const mesh = new THREE.Mesh(wetGeom, wetMat);
       mesh.position.copy(pos);
       this.scene.add(mesh);
@@ -678,6 +752,22 @@ export class Apartment3DMap {
     return this.isAutoSpinning;
   }
 
+  focusRobot() {
+    if (!this.world.robot || !this.controls) return;
+    const r = this.world.robot;
+    const robot3D = this.to3D(r.x, r.y, 0.20);
+    const targetCameraPos = new THREE.Vector3(robot3D.x + 3.0, 7.5, robot3D.z + 5.0);
+    this.animateCameraTo(targetCameraPos, robot3D, 550);
+  }
+
+  toggleFollowRobot() {
+    this.isFollowingRobot = !this.isFollowingRobot;
+    if (this.isFollowingRobot) {
+      this.focusRobot();
+    }
+    return this.isFollowingRobot;
+  }
+
   animateCameraTo(targetPos, targetLookAt, duration = 650) {
     const startPos = this.camera.position.clone();
     const startTarget = this.controls.target.clone();
@@ -717,33 +807,71 @@ export class Apartment3DMap {
   }
 
   update(delta) {
-    // 1. Sync Cleaning Robot Position & Orientation
+    // 1. Sync Cleaning Robot Position & Active State
     if (this.robotGroup && this.world.robot) {
       const r = this.world.robot;
-      const targetPos = this.to3D(r.x, r.y, 0.08);
+      const targetPos = this.to3D(r.x, r.y, 0.20);
       this.robotGroup.position.lerp(targetPos, 0.35);
 
       // Invert 2D heading for 3D Y-axis rotation
       this.robotGroup.rotation.y = -r.heading + Math.PI / 2;
 
-      // Update Action Bubble
-      if (r.traceState && r.traceState.action) {
-        this.updateRobotActionSprite(`⚙️ ${r.traceState.action}`);
+      // Spin lidar scanner dome
+      if (this.robotLidarTurret) {
+        this.robotLidarTurret.rotation.y += 0.12;
+      }
+
+      // Pulse ground beacon ring
+      if (this.robotGroundBeacon) {
+        const pulse = 1.0 + Math.sin(performance.now() * 0.005) * 0.15;
+        this.robotGroundBeacon.scale.set(pulse, 1, pulse);
+      }
+
+      // Dynamically update LED ring & ground halo colors
+      if (this.robotLedMat) {
+        if (r.isStopped) {
+          this.robotLedMat.color.setHex(0xef4444); // red (emergency brake)
+          if (this.robotGroundMat) this.robotGroundMat.color.setHex(0xef4444);
+        } else if (r.isSlow) {
+          this.robotLedMat.color.setHex(0xf59e0b); // amber (caution / near human)
+          if (this.robotGroundMat) this.robotGroundMat.color.setHex(0xf59e0b);
+        } else if (r.vacuumActive) {
+          this.robotLedMat.color.setHex(0x38bdf8); // blue (suction active)
+          if (this.robotGroundMat) this.robotGroundMat.color.setHex(0x38bdf8);
+        } else if (r.mopDeployed) {
+          this.robotLedMat.color.setHex(0x06b6d4); // cyan (mop active)
+          if (this.robotGroundMat) this.robotGroundMat.color.setHex(0x06b6d4);
+        } else if (r.battery < 30) {
+          this.robotLedMat.color.setHex(0xa855f7); // purple (docking on low battery)
+          if (this.robotGroundMat) this.robotGroundMat.color.setHex(0xa855f7);
+        } else {
+          this.robotLedMat.color.setHex(0x10b981); // green (nominal cruising)
+          if (this.robotGroundMat) this.robotGroundMat.color.setHex(0x10b981);
+        }
+      }
+
+      // Update Overhead Action Sprite
+      const act = r.traceState?.action || (r.vacuumActive ? 'VACUUM ON' : r.mopDeployed ? 'MOPPING' : 'CRUISING');
+      this.updateRobotActionSprite(`⚙️ ${act} • 🔋 ${Math.round(r.battery)}%`);
+
+      // Follow Camera Mode: keep camera tracking the robot
+      if (this.isFollowingRobot && this.controls && this.viewMode === 'orbit') {
+        this.controls.target.lerp(targetPos, 0.08);
       }
     }
 
-    // 2. Sync Roaming Cat NPC
+    // 2. Sync Roaming Cat NPC (Elevation sitting on top of floor)
     if (this.catGroup && this.world.cat) {
       const c = this.world.cat;
-      const catPos = this.to3D(c.x, c.y, 0.02);
+      const catPos = this.to3D(c.x, c.y, 0.22);
       this.catGroup.position.lerp(catPos, 0.25);
       this.catGroup.rotation.y = -c.heading + Math.PI / 2;
     }
 
-    // 3. Sync Operator Avatar Position
+    // 3. Sync Operator Avatar Position (Feet touching floor at 0.10)
     if (this.avatarGroup && this.world.avatar) {
       const a = this.world.avatar;
-      const avatarPos = this.to3D(a.x, a.y, 0.02);
+      const avatarPos = this.to3D(a.x, a.y, 0.10);
       this.avatarGroup.position.lerp(avatarPos, 0.3);
       this.avatarGroup.rotation.y = -a.heading + Math.PI / 2;
     }

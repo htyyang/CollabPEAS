@@ -248,6 +248,33 @@ window.addEventListener('DOMContentLoaded', () => {
     isDialDragging = false;
   });
 
+  // Focus Robot Button
+  const focusRobotBtn = document.getElementById('focusRobotBtn');
+  focusRobotBtn?.addEventListener('click', () => {
+    if (currentViewMode === '2d') {
+      houseCanvas.focusRobot();
+    } else if (map3d) {
+      map3d.focusRobot();
+    }
+    sound.playSnap();
+  });
+
+  // Follow Robot Camera Toggle
+  const followRobotBtn = document.getElementById('followRobotBtn');
+  followRobotBtn?.addEventListener('click', () => {
+    if (map3d) {
+      const isFollowing = map3d.toggleFollowRobot();
+      if (isFollowing) {
+        followRobotBtn.classList.add('active');
+        followRobotBtn.innerText = '🎥 Following...';
+      } else {
+        followRobotBtn.classList.remove('active');
+        followRobotBtn.innerText = '🎥 Follow Robot';
+      }
+    }
+    sound.playClick();
+  });
+
   // Recenter Map Button
   const recenterMapBtn = document.getElementById('recenterMapBtn');
   recenterMapBtn?.addEventListener('click', () => {

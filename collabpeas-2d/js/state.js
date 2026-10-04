@@ -211,6 +211,10 @@ class StateManager {
     return entry;
   }
 
+  addObservation(stamp, comment = '') {
+    return this.addObservationStamp(stamp, comment);
+  }
+
   recordDebugMove(moveType) {
     if (moveType === 'move1_swap') this.debugMoves.move1_swap++;
     if (moveType === 'move2_addRule') this.debugMoves.move2_addRule++;

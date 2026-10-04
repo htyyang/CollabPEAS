@@ -24,8 +24,12 @@
     - **Station 5**: Master Bedroom (`🔬 Observation & Debug`)
   - Raycaster hover effect expands the ring and highlights the title card.
   - Clicking any 3D station ring immediately pops open the Step workstation modal!
+- **High-Visibility 3D Cleaning Robot & Tracking**:
+  - Metallic disc chassis sitting flush on the floor slab ($y = 0.20\text{m}$ elevation), rotating top LiDAR turret, dual forward headlights, and pulsing ground halo beacon.
+  - State-reactive LED ring (Blue = vacuuming, Cyan = mopping, Amber = slowing near human, Red = cat avoidance brake, Purple = dock return).
+  - Unoccluded overhead canvas billboard sprite (`🤖 CLEANING ROBOT [ACTION • BATT%]`) rendered with `depthTest: false` so it is always visible through interior walls.
+  - Dedicated camera controls: **`🤖 Focus Robot`** and **`🎥 Follow Robot`** to track the robot as it navigates between rooms.
 - **Dynamic 3D Entities**:
-  - **Metallic Cleaning Robot**: Disc chassis, glowing LED status ring, headlights, dynamic action tag (`⚙️ VACUUMING_DIRT`), and live sonar pulse arcs.
   - **Roaming Cat NPC**: Procedural 3D cat with ears and swinging tail walking across rooms.
   - **Operator Avatar**: Stylized 3D humanoid figure with player color (Player A blue / Player B purple) and 360° sight cone.
   - **Floor Decals**: Dynamic 3D dirt spots and shimmering water puddles that clear as the robot cleans.
@@ -132,6 +136,13 @@ CollabPEAS/
 │           ├── session-log.js # Research telemetry & CSV exporter
 │           └── dual-log.js   # Dual observation stamp logging
 ```
+
+---
+
+## 📚 Documentation & User Guides
+
+- 📘 **[Workflow & User Guide](collabpeas-2d/docs/WORKFLOW_AND_USER_GUIDE.md)**: Comprehensive manual explaining the full application workflow, 360° dual-engine navigation, step-by-step PEAS design progression (Steps 1–5), 3D Cleaning Robot tracking, dyadic CSCW collaboration, and testing procedures.
+- 🛠️ **[Architecture & Development Document](collabpeas-2d/docs/DEVELOPMENT.md)**: Technical architecture, state management, parallel 10Hz simulation engine, block compatibility validator, and research telemetry.
 
 ---
 
