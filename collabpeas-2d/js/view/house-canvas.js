@@ -101,10 +101,19 @@ export class HouseCanvasRenderer {
   focusRobot() {
     if (!this.world.robot) return;
     const r = this.world.robot;
-    const cx = this.cssWidth / 2;
-    const cy = this.cssHeight / 2;
+    const cx = (this.cssWidth || 1000) / 2;
+    const cy = (this.cssHeight || 700) / 2;
+    this.camera.scale = Math.max(1.15, this.camera.scale);
     this.camera.x = cx - r.x * this.camera.scale;
     this.camera.y = cy - r.y * this.camera.scale;
+  }
+
+  toggleFollowRobot() {
+    this.isFollowingRobot = !this.isFollowingRobot;
+    if (this.isFollowingRobot) {
+      this.focusRobot();
+    }
+    return this.isFollowingRobot;
   }
 
   updateCompassHud() {
@@ -394,6 +403,15 @@ export class HouseCanvasRenderer {
     const h = this.cssHeight || 700;
 
     ctx.clearRect(0, 0, w, h);
+
+    // Smoothly follow robot if follow camera is enabled
+    if (this.isFollowingRobot && this.world.robot) {
+      const r = this.world.robot;
+      const targetCamX = w / 2 - r.x * this.camera.scale;
+      const targetCamY = h / 2 - r.y * this.camera.scale;
+      this.camera.x += (targetCamX - this.camera.x) * 0.12;
+      this.camera.y += (targetCamY - this.camera.y) * 0.12;
+    }
 
     ctx.save();
     if (this.headingAngle) {
@@ -686,100 +704,146 @@ export class HouseCanvasRenderer {
     const robot = this.world.robot;
     const installed = appState.installedSensors;
 
+    // 1. High-Visibility Animated Pulsing Ground Beacon
+    const pulse = Math.sin(Date.now() / 160) * 4;
+    const beaconRadius = robot.radius + 14 + pulse;
     ctx.save();
     ctx.translate(robot.x, robot.y);
-
-    // Sonar radar rings (SENSE_04)
-    if (installed.has('SENSE_04')) {
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.3)';
-      ctx.lineWidth = 1;
-      ctx.setLineDash([2, 4]);
-      ctx.beginPath();
-      ctx.arc(0, 0, 60, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.arc(0, 0, 90, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-
-    // Glow undercarriage
-    ctx.fillStyle = robot.ledColor;
-    ctx.beginPath();
-    ctx.arc(0, 0, robot.radius + 6, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.rotate(robot.heading);
-
-    // Main Chassis
-    ctx.fillStyle = '#0f172a';
-    ctx.strokeStyle = '#38bdf8';
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.75)';
+    ctx.fillStyle = 'rgba(56, 189, 248, 0.18)';
     ctx.lineWidth = 2.5;
     ctx.beginPath();
-    ctx.arc(0, 0, robot.radius, 0, Math.PI * 2);
+    ctx.arc(0, 0, beaconRadius, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
+    // 2. Forward Headlight Beams & Directional Cone
+    ctx.rotate(robot.heading);
+    ctx.fillStyle = 'rgba(56, 189, 248, 0.22)';
+    ctx.beginPath();
+    ctx.moveTo(10, -6);
+    ctx.lineTo(55, -24);
+    ctx.lineTo(55, 24);
+    ctx.lineTo(10, 6);
+    ctx.closePath();
+    ctx.fill();
+
+    // 3. Chassis Base (Chrome Bevel + Metallic Slate Body)
+    ctx.fillStyle = '#334155';
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(0, 0, robot.radius + 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Inner Metallic Core
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.arc(0, 0, robot.radius - 2, 0, Math.PI * 2);
+    ctx.fill();
+
     // Wheels
-    ctx.fillStyle = '#475569';
-    ctx.fillRect(-8, -robot.radius - 3, 16, 5);
-    ctx.fillRect(-8, robot.radius - 2, 16, 5);
+    ctx.fillStyle = '#64748b';
+    ctx.fillRect(-9, -robot.radius - 4, 18, 6);
+    ctx.fillRect(-9, robot.radius - 2, 18, 6);
 
-    // Eyes
-    if (installed.has('SENSE_15')) {
-      ctx.fillStyle = '#38bdf8';
-      ctx.beginPath();
-      ctx.arc(12, -5, 3.5, 0, Math.PI * 2);
-      ctx.arc(12, 5, 3.5, 0, Math.PI * 2);
-      ctx.fill();
-    }
+    // Status LED Ring
+    ctx.strokeStyle = robot.ledColor;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, robot.radius * 0.55, 0, Math.PI * 2);
+    ctx.stroke();
 
-    // Arm
+    // Headlights
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(robot.radius - 4, -7, 3.5, 0, Math.PI * 2);
+    ctx.arc(robot.radius - 4, 7, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Rotating Lidar Scanner Dome with Red Laser Eye
+    const lidarAngle = (Date.now() / 120) % (Math.PI * 2);
+    ctx.fillStyle = '#0284c7';
+    ctx.beginPath();
+    ctx.arc(0, 0, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath();
+    ctx.arc(Math.cos(lidarAngle) * 5, Math.sin(lidarAngle) * 5, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Arm & Gripper
     if (robot.armExtended) {
-      ctx.strokeStyle = '#94a3b8';
+      ctx.strokeStyle = '#cbd5e1';
       ctx.lineWidth = 4;
       ctx.beginPath();
-      ctx.moveTo(14, 0); ctx.lineTo(28, 0);
+      ctx.moveTo(14, 0); ctx.lineTo(30, 0);
       ctx.stroke();
       ctx.strokeStyle = robot.gripperClosed ? '#10b981' : '#f59e0b';
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 2.5;
       ctx.beginPath();
-      ctx.moveTo(28, -6); ctx.lineTo(34, -2);
-      ctx.moveTo(28, 6); ctx.lineTo(34, 2);
+      ctx.moveTo(30, -7); ctx.lineTo(37, -2);
+      ctx.moveTo(30, 7); ctx.lineTo(37, 2);
       ctx.stroke();
     }
 
-    // Facing Direction Arrow
-    ctx.strokeStyle = '#f8fafc';
-    ctx.lineWidth = 2;
+    // Front Direction Arrow
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2.5;
     ctx.beginPath();
-    ctx.moveTo(2, 0); ctx.lineTo(12, 0);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(14, 0);
     ctx.stroke();
 
     ctx.restore();
 
-    // Trace status overhead
+    // 4. Game HUD Nameplate (High-contrast, bold, impossible to miss)
+    ctx.save();
     const trace = robot.traceState;
-    if (trace && trace.action) {
-      ctx.save();
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
-      ctx.strokeStyle = '#10b981';
-      ctx.lineWidth = 1.5;
-      const text = `⚙️ ${trace.action}`;
-      ctx.font = 'bold 10px Inter, sans-serif';
-      const tw = ctx.measureText(text).width + 14;
-      ctx.fillRect(robot.x - tw / 2, robot.y - 36, tw, 18);
-      ctx.strokeRect(robot.x - tw / 2, robot.y - 36, tw, 18);
-      ctx.fillStyle = '#6ee7b7';
-      ctx.textAlign = 'center';
-      ctx.fillText(text, robot.x, robot.y - 23);
-      ctx.restore();
-    } else {
-      ctx.fillStyle = '#93c5fd';
-      ctx.font = 'bold 10px Inter, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(`🤖 Robot (${Math.round(robot.battery)}%)`, robot.x, robot.y - 26);
-    }
+    const actText = trace?.action ? `⚙️ ${trace.action}` : (robot.vacuumActive ? '⚙️ VACUUM ON' : robot.mopDeployed ? '⚙️ MOPPING' : '⚙️ READY / CRUISING');
+    const battText = `🔋 ${Math.round(robot.battery)}%`;
+    const subText = `${actText} • ${battText}`;
+
+    ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    const titleWidth = ctx.measureText('🤖 CLEANING ROBOT').width;
+    ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    const subWidth = ctx.measureText(subText).width;
+    const pillW = Math.max(titleWidth, subWidth) + 24;
+    const pillH = 34;
+    const pillX = robot.x - pillW / 2;
+    const pillY = robot.y - 56;
+
+    // Background Badge
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.96)';
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(pillX, pillY, pillW, pillH, 8);
+    ctx.fill();
+    ctx.stroke();
+
+    // Downward pointer triangle
+    ctx.fillStyle = '#38bdf8';
+    ctx.beginPath();
+    ctx.moveTo(robot.x - 6, pillY + pillH);
+    ctx.lineTo(robot.x + 6, pillY + pillH);
+    ctx.lineTo(robot.x, pillY + pillH + 6);
+    ctx.closePath();
+    ctx.fill();
+
+    // Title Text
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🤖 CLEANING ROBOT', robot.x, pillY + 14);
+
+    // Subtitle / Action & Battery
+    ctx.fillStyle = robot.isStopped ? '#f87171' : robot.isSlow ? '#fbbf24' : '#34d399';
+    ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText(subText, robot.x, pillY + 28);
+
+    ctx.restore();
   }
 
   renderAvatar(ctx) {

@@ -262,15 +262,18 @@ window.addEventListener('DOMContentLoaded', () => {
   // Follow Robot Camera Toggle
   const followRobotBtn = document.getElementById('followRobotBtn');
   followRobotBtn?.addEventListener('click', () => {
-    if (map3d) {
-      const isFollowing = map3d.toggleFollowRobot();
-      if (isFollowing) {
-        followRobotBtn.classList.add('active');
-        followRobotBtn.innerText = '🎥 Following...';
-      } else {
-        followRobotBtn.classList.remove('active');
-        followRobotBtn.innerText = '🎥 Follow Robot';
-      }
+    let isFollowing = false;
+    if (currentViewMode === '2d') {
+      isFollowing = houseCanvas.toggleFollowRobot();
+    } else if (map3d) {
+      isFollowing = map3d.toggleFollowRobot();
+    }
+    if (isFollowing) {
+      followRobotBtn.classList.add('active');
+      followRobotBtn.innerText = '🎥 Following...';
+    } else {
+      followRobotBtn.classList.remove('active');
+      followRobotBtn.innerText = '🎥 Follow Robot';
     }
     sound.playClick();
   });

@@ -111,10 +111,10 @@ export class ApartmentWorld {
       { x: 865, y: 575, w: 50, h: 40, type: 'furniture', name: 'Vanity Sink' }
     ];
 
-    // Charging Dock Station (Living room corner / hallway)
+    // Charging Dock Station (Living room north alcove)
     this.dock = {
-      x: 620,
-      y: 130,
+      x: 580,
+      y: 160,
       width: 52,
       height: 42,
       angle: 0
@@ -140,7 +140,7 @@ export class ApartmentWorld {
     // Teleport Markers (Inspired by Fusion VR Training TeleportTargetMarker.cs)
     this.teleportMarkers = [
       { id: 'TP_LIVING', name: 'Living Room', x: 420, y: 380, icon: '🛋️' },
-      { id: 'TP_DOCK', name: 'Charging Dock', x: 620, y: 200, icon: '⚡' },
+      { id: 'TP_DOCK', name: 'Charging Dock', x: 580, y: 160, icon: '⚡' },
       { id: 'TP_KITCHEN', name: 'Kitchen', x: 330, y: 720, icon: '🍳' },
       { id: 'TP_DINING', name: 'Dining Room', x: 610, y: 840, icon: '🍽️' },
       { id: 'TP_BEDROOM', name: 'Bedroom', x: 880, y: 850, icon: '🛏️' },
@@ -183,8 +183,8 @@ export class ApartmentWorld {
       },
       {
         id: 'TAG_CHARGING_DOCK',
-        x: 620,
-        y: 130,
+        x: 580,
+        y: 160,
         dimension: 'Goal Localization',
         text: 'Charging Station: Requires reliable coordinate localization for docking return.',
         icon: '⚡'
@@ -236,25 +236,25 @@ export class ApartmentWorld {
       targetIndex: 0
     };
 
-    // Autonomous Cleaning Robot
+    // Autonomous Cleaning Robot (Spawned prominently in Living Room ready to clean)
     this.robot = {
-      x: 620,
-      y: 190,
+      x: 480,
+      y: 320,
       radius: 20,
-      heading: Math.PI / 2,
+      heading: -Math.PI / 2, // Facing North towards open living room / dirt
       speed: 2.2,
       isSlow: false,
       isStopped: false,
       battery: 100,
-      isDocked: true,
+      isDocked: false,
       isCharging: false,
       vacuumActive: false,
       mopDeployed: false,
       armExtended: false,
       gripperClosed: false,
       heldObject: null,
-      ledColor: 'rgba(59, 130, 246, 0.8)',
-      lastTickLog: 'Robot ready at Dock',
+      ledColor: 'rgba(59, 130, 246, 0.9)',
+      lastTickLog: 'Robot ready in Living Room',
       traceState: { sense: null, decide: null, act: null },
       pathTrail: []
     };
@@ -294,9 +294,9 @@ export class ApartmentWorld {
     this.dirtCells.forEach(c => c.cleaned = false);
     this.wetCells.forEach(c => c.cleaned = false);
     this.objects.forEach(o => { o.carried = false; o.disposed = false; });
-    this.robot.x = 620;
-    this.robot.y = 190;
-    this.robot.heading = Math.PI / 2;
+    this.robot.x = 480;
+    this.robot.y = 320;
+    this.robot.heading = -Math.PI / 2;
     this.robot.battery = 98;
     this.robot.heldObject = null;
     this.robot.vacuumActive = false;

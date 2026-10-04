@@ -326,21 +326,35 @@ export class Apartment3DMap {
     this.robotGroup = new THREE.Group();
 
     // 1. Lower Pulsing Ground Halo Disc (ensures high visibility from high camera angles)
-    const groundGeom = new THREE.RingGeometry(0.55, 0.72, 32);
+    const groundGeom = new THREE.RingGeometry(0.60, 0.82, 36);
     groundGeom.rotateX(-Math.PI / 2);
     this.robotGroundMat = new THREE.MeshBasicMaterial({
       color: 0x38bdf8,
       transparent: true,
-      opacity: 0.55,
+      opacity: 0.65,
       side: THREE.DoubleSide,
       depthWrite: false
     });
     this.robotGroundBeacon = new THREE.Mesh(groundGeom, this.robotGroundMat);
-    this.robotGroundBeacon.position.y = -0.09;
+    this.robotGroundBeacon.position.y = -0.11;
     this.robotGroup.add(this.robotGroundBeacon);
 
-    // 2. Main Metallic Chassis Body
-    const bodyGeom = new THREE.CylinderGeometry(0.46, 0.48, 0.18, 36);
+    // 2. Vertical Holographic Target Column (Beacon Beam)
+    const beamGeom = new THREE.CylinderGeometry(0.38, 0.38, 1.8, 24, 1, true);
+    beamGeom.translate(0, 0.9, 0);
+    this.robotBeamMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.25,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    this.robotBeam = new THREE.Mesh(beamGeom, this.robotBeamMat);
+    this.robotBeam.renderOrder = 8888;
+    this.robotGroup.add(this.robotBeam);
+
+    // 3. Main Metallic Chassis Body
+    const bodyGeom = new THREE.CylinderGeometry(0.48, 0.50, 0.20, 36);
     const bodyMat = new THREE.MeshStandardMaterial({
       color: 0x1e293b,
       metalness: 0.85,
@@ -351,26 +365,26 @@ export class Apartment3DMap {
     body.receiveShadow = true;
     this.robotGroup.add(body);
 
-    // 3. Chrome Top Shell Trim
-    const topShellGeom = new THREE.CylinderGeometry(0.42, 0.44, 0.04, 36);
+    // 4. Chrome Top Shell Trim
+    const topShellGeom = new THREE.CylinderGeometry(0.44, 0.46, 0.04, 36);
     const topShellMat = new THREE.MeshStandardMaterial({
       color: 0x475569,
       metalness: 0.9,
       roughness: 0.15
     });
     const topShell = new THREE.Mesh(topShellGeom, topShellMat);
-    topShell.position.y = 0.10;
+    topShell.position.y = 0.11;
     this.robotGroup.add(topShell);
 
-    // 4. Rotating Lidar Scanner Turret
+    // 5. Rotating Lidar Scanner Turret
     const turretBaseGeom = new THREE.CylinderGeometry(0.14, 0.16, 0.06, 24);
     const turretBaseMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.3 });
     const turretBase = new THREE.Mesh(turretBaseGeom, turretBaseMat);
-    turretBase.position.y = 0.14;
+    turretBase.position.y = 0.15;
     this.robotGroup.add(turretBase);
 
     this.robotLidarTurret = new THREE.Group();
-    this.robotLidarTurret.position.y = 0.18;
+    this.robotLidarTurret.position.y = 0.19;
     const lidarHeadGeom = new THREE.CylinderGeometry(0.09, 0.09, 0.05, 16);
     const lidarHeadMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.6 });
     const lidarHead = new THREE.Mesh(lidarHeadGeom, lidarHeadMat);
@@ -383,40 +397,45 @@ export class Apartment3DMap {
     this.robotLidarTurret.add(lidarEye);
     this.robotGroup.add(this.robotLidarTurret);
 
-    // 5. Glowing LED Halo Perimeter Ring
-    const ledGeom = new THREE.TorusGeometry(0.46, 0.03, 16, 48);
+    // 6. Glowing LED Halo Perimeter Ring
+    const ledGeom = new THREE.TorusGeometry(0.48, 0.035, 16, 48);
     ledGeom.rotateX(Math.PI / 2);
     this.robotLedMat = new THREE.MeshStandardMaterial({
       color: 0x10b981,
       emissive: 0x10b981,
-      emissiveIntensity: 0.8,
+      emissiveIntensity: 0.9,
       roughness: 0.2
     });
     const ledMesh = new THREE.Mesh(ledGeom, this.robotLedMat);
-    ledMesh.position.y = 0.08;
+    ledMesh.position.y = 0.09;
     this.robotGroup.add(ledMesh);
 
-    // 6. Dual Forward Headlights / Navigation Eyes
-    const lightGeom = new THREE.SphereGeometry(0.045, 16, 16);
+    // 7. Dual Forward Headlights / Navigation Eyes
+    const lightGeom = new THREE.SphereGeometry(0.05, 16, 16);
     const lightMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
     const leftLight = new THREE.Mesh(lightGeom, lightMat);
-    leftLight.position.set(-0.20, 0.04, 0.42);
+    leftLight.position.set(-0.22, 0.05, 0.44);
     const rightLight = new THREE.Mesh(lightGeom, lightMat);
-    rightLight.position.set(0.20, 0.04, 0.42);
+    rightLight.position.set(0.22, 0.05, 0.44);
     this.robotGroup.add(leftLight);
     this.robotGroup.add(rightLight);
 
-    // 7. Front Directional Bumper
-    const bumpGeom = new THREE.BoxGeometry(0.28, 0.09, 0.12);
+    // 8. Front Directional Bumper
+    const bumpGeom = new THREE.BoxGeometry(0.30, 0.10, 0.12);
     const bumpMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.5 });
     const bumper = new THREE.Mesh(bumpGeom, bumpMat);
-    bumper.position.set(0, 0.02, 0.42);
+    bumper.position.set(0, 0.03, 0.44);
     this.robotGroup.add(bumper);
 
-    // 8. Overhead High-Visibility Billboard
+    // 9. Overhead High-Visibility Billboard (Elevated & Rendered on top of everything)
     this.robotActionSprite = this.createRobotActionSprite('⚙️ READY • 🔋 100%');
-    this.robotActionSprite.position.set(0, 0.95, 0);
+    this.robotActionSprite.position.set(0, 1.30, 0);
     this.robotGroup.add(this.robotActionSprite);
+
+    // Immediately position the robot group at world coordinates
+    const initPos = this.to3D(this.world.robot.x, this.world.robot.y, 0.24);
+    this.robotGroup.position.copy(initPos);
+    this.robotGroup.rotation.y = -this.world.robot.heading + Math.PI / 2;
 
     this.scene.add(this.robotGroup);
   }
@@ -452,7 +471,8 @@ export class Apartment3DMap {
       transparent: true
     });
     const sprite = new THREE.Sprite(spriteMat);
-    sprite.scale.set(1.9, 0.48, 1);
+    sprite.scale.set(2.6, 0.65, 1);
+    sprite.renderOrder = 9999;
     sprite.canvas = canvas;
     sprite.ctx = ctx;
     sprite.texture = texture;
@@ -755,8 +775,8 @@ export class Apartment3DMap {
   focusRobot() {
     if (!this.world.robot || !this.controls) return;
     const r = this.world.robot;
-    const robot3D = this.to3D(r.x, r.y, 0.20);
-    const targetCameraPos = new THREE.Vector3(robot3D.x + 3.0, 7.5, robot3D.z + 5.0);
+    const robot3D = this.to3D(r.x, r.y, 0.24);
+    const targetCameraPos = new THREE.Vector3(robot3D.x, 7.0, robot3D.z + 5.5);
     this.animateCameraTo(targetCameraPos, robot3D, 550);
   }
 
@@ -810,7 +830,7 @@ export class Apartment3DMap {
     // 1. Sync Cleaning Robot Position & Active State
     if (this.robotGroup && this.world.robot) {
       const r = this.world.robot;
-      const targetPos = this.to3D(r.x, r.y, 0.20);
+      const targetPos = this.to3D(r.x, r.y, 0.24);
       this.robotGroup.position.lerp(targetPos, 0.35);
 
       // Invert 2D heading for 3D Y-axis rotation
@@ -821,42 +841,39 @@ export class Apartment3DMap {
         this.robotLidarTurret.rotation.y += 0.12;
       }
 
-      // Pulse ground beacon ring
+      // Pulse ground beacon ring & vertical beam
       if (this.robotGroundBeacon) {
         const pulse = 1.0 + Math.sin(performance.now() * 0.005) * 0.15;
         this.robotGroundBeacon.scale.set(pulse, 1, pulse);
-      }
-
-      // Dynamically update LED ring & ground halo colors
-      if (this.robotLedMat) {
-        if (r.isStopped) {
-          this.robotLedMat.color.setHex(0xef4444); // red (emergency brake)
-          if (this.robotGroundMat) this.robotGroundMat.color.setHex(0xef4444);
-        } else if (r.isSlow) {
-          this.robotLedMat.color.setHex(0xf59e0b); // amber (caution / near human)
-          if (this.robotGroundMat) this.robotGroundMat.color.setHex(0xf59e0b);
-        } else if (r.vacuumActive) {
-          this.robotLedMat.color.setHex(0x38bdf8); // blue (suction active)
-          if (this.robotGroundMat) this.robotGroundMat.color.setHex(0x38bdf8);
-        } else if (r.mopDeployed) {
-          this.robotLedMat.color.setHex(0x06b6d4); // cyan (mop active)
-          if (this.robotGroundMat) this.robotGroundMat.color.setHex(0x06b6d4);
-        } else if (r.battery < 30) {
-          this.robotLedMat.color.setHex(0xa855f7); // purple (docking on low battery)
-          if (this.robotGroundMat) this.robotGroundMat.color.setHex(0xa855f7);
-        } else {
-          this.robotLedMat.color.setHex(0x10b981); // green (nominal cruising)
-          if (this.robotGroundMat) this.robotGroundMat.color.setHex(0x10b981);
+        if (this.robotBeamMat) {
+          this.robotBeamMat.opacity = 0.20 + Math.sin(performance.now() * 0.004) * 0.08;
         }
       }
 
+      // Dynamically update LED ring & ground halo & beam colors
+      if (this.robotLedMat) {
+        let col = 0x10b981; // green
+        if (r.isStopped) col = 0xef4444; // red
+        else if (r.isSlow) col = 0xf59e0b; // amber
+        else if (r.vacuumActive) col = 0x38bdf8; // blue
+        else if (r.mopDeployed) col = 0x06b6d4; // cyan
+        else if (r.battery < 30) col = 0xa855f7; // purple
+
+        this.robotLedMat.color.setHex(col);
+        this.robotLedMat.emissive.setHex(col);
+        if (this.robotGroundMat) this.robotGroundMat.color.setHex(col);
+        if (this.robotBeamMat) this.robotBeamMat.color.setHex(col);
+      }
+
       // Update Overhead Action Sprite
-      const act = r.traceState?.action || (r.vacuumActive ? 'VACUUM ON' : r.mopDeployed ? 'MOPPING' : 'CRUISING');
+      const act = r.traceState?.action || (r.vacuumActive ? 'VACUUM ON' : r.mopDeployed ? 'MOPPING' : 'READY / CRUISING');
       this.updateRobotActionSprite(`⚙️ ${act} • 🔋 ${Math.round(r.battery)}%`);
 
       // Follow Camera Mode: keep camera tracking the robot
       if (this.isFollowingRobot && this.controls && this.viewMode === 'orbit') {
-        this.controls.target.lerp(targetPos, 0.08);
+        const deltaTarget = targetPos.clone().sub(this.controls.target).multiplyScalar(0.08);
+        this.camera.position.add(deltaTarget);
+        this.controls.target.add(deltaTarget);
       }
     }
 
