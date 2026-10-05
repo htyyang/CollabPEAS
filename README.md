@@ -12,7 +12,7 @@
 
 ---
 
-## ⚡ 60-Second Quickstart for Research Partners
+## ⚡ Quickstart
 
 No build tools, no `npm install`, and no Docker required! The platform runs out of the box using any standard local web server.
 
@@ -206,7 +206,6 @@ CollabPEAS is tailored for pair-programming and co-design research:
 ```
 CollabPEAS/
 ├── README.md                      # Primary project documentation & quickstart
-├── push_to_github.sh              # 1-click GitHub remote setup & push utility
 ├── Materials/
 │   ├── Apartment.png              # Photorealistic reference floor render
 │   ├── Apartment_01.fbx           # FBX source model
@@ -250,36 +249,6 @@ CollabPEAS/
 
 ---
 
-## 🚀 Pushing to Your GitHub Account
-
-To publish this repository to your GitHub account:
-
-### Method 1: Automated Script (Recommended)
-1. Open your browser and create a new repository at **[https://github.com/new](https://github.com/new)**:
-   - **Repository Name**: `CollabPEAS`
-   - Set to **Public** or **Private**.
-   - **Do NOT** check "Add a README file", "Add .gitignore", or "Choose a license" (this project already includes them).
-   - Click **"Create repository"**.
-2. Run the helper script in your terminal:
-   ```bash
-   ./push_to_github.sh
-   ```
-   Paste your GitHub repository URL (e.g., `https://github.com/<your-username>/CollabPEAS.git`) when prompted. The script will automatically link the remote and push all commits and version tags (`v0.1`, `v0.2`, `v0.3`).
-
-### Method 2: Manual Git Commands
-```bash
-# Link your GitHub repository
-git remote add origin https://github.com/<your-username>/CollabPEAS.git
-
-# Push the master branch
-git push -u origin master
-
-# Push all release tags (v0.1, v0.2, v0.3)
-git push origin --tags
-```
-
----
-
 ## 🛠️ Troubleshooting & FAQs
 
 ### Q: Port 8088 is already in use
@@ -306,18 +275,3 @@ Browsers require user interaction before playing audio. Click anywhere on the ma
 - 🛠️ **[Architecture & Development Document](collabpeas-2d/docs/DEVELOPMENT.md)**: Under-the-hood technical design, reactive store architecture, 10Hz simulation loop, and block validation engine.
 
 ---
-
-## 📑 Research Citation
-
-If you use CollabPEAS in academic research, please cite:
-
-```bibtex
-@inproceedings{yang2026collabpeas,
-  title={CollabPEAS: Designing Household Autonomous Agents via Dyadic PEAS Specification},
-  author={Yang, Haotian and Collaborators},
-  booktitle={Proceedings of the 2026 ACM Conference on Computer Supported Cooperative Work and Social Computing (CSCW '26)},
-  year={2026}
-}
-```
-
-**Contact**: Haotian Yang (`hyang57@u.rochester.edu`) · University of Rochester
