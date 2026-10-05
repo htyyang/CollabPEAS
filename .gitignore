@@ -11,3 +11,8 @@ Materials/*.glb
 Materials/*.fbx
 Materials/*.unitypackage
 
+02_Design Flow.pdf
+push_to_github.sh
+CollabPEAS_extracted.txt
+DesignFlow_extracted.txt
+CollabPEAS.pdf
